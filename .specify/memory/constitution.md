@@ -1,7 +1,7 @@
 <!--
 Sync Impact Report
 ==================
-Version change: 2.5.0 -> 2.18.0 (thirteen MINOR amendments plus two PATCHes, all still
+Version change: 2.5.0 -> 2.19.0 (fourteen MINOR amendments plus two PATCHes, all still
 uncommitted)
 
 Amendments:
@@ -40,6 +40,8 @@ Amendments:
   `$31` the minimum; the profile requires `$30 = 8000` and `$31 = 5000`, set as machine
   setup. The app MUST NOT read or change controller settings. TODO(MACHINE_PROFILE) is
   resolved and withdrawn.
+- 2.19.0 MINOR: bundle identifier fixed at `com.hansvanderpol.CNCswift` and locked against
+  change without an amendment. Signing team and notarization stay TODO(SIGNING_IDENTITY).
 
 Modified principles:
 - I. Swift 6 Language Mode and Strict Concurrency - unchanged
@@ -58,7 +60,8 @@ Removed sections: none
 Open TODOs: none. The machine profile has no unresolved facts.
 
 Follow-up TODOs:
-- TODO(SIGNING_IDENTITY): bundle identifier, signing team, notarization unknown.
+- TODO(SIGNING_IDENTITY): signing team and notarization unknown; the bundle identifier is
+  fixed at `com.hansvanderpol.CNCswift`.
 - TODO(TOOL_ADMIN_SCOPE): whether cutter administration also covers wear and life tracking,
   tool-change sheets, or machine offsets is unstated.
 -->
@@ -306,8 +309,12 @@ Two isolated modes over one library keep the toolpath reproducible from a file a
   profile is defined by the GRBL 1.1 dialect and the machine's mechanical and spindle
   limits, not by a firmware build, and the app MUST NOT detect, query, or depend on a
   firmware version. Tool activation is spindle-only; laser output is out of scope.
-- Distribution, bundle identifier, signing, and notarization are TODO(SIGNING_IDENTITY) and
-  MUST be settled before a release plan is written.
+- Distribution: the app is built and run locally on the developer's Mac. It is not prepared
+  for the App Store or any other distribution channel: no App Store submission, no Developer
+  ID signing, and no notarization. Local development builds use Xcode's default local signing
+  only, and producing a distributable signed or notarized artifact requires an amendment. The
+  bundle identifier is `com.hansvanderpol.CNCswift` and MUST NOT change without an
+  amendment.
 
 ## Development Workflow and Quality Gates
 
@@ -344,4 +351,4 @@ Two isolated modes over one library keep the toolpath reproducible from a file a
 - `AGENTS.md` holds runtime guidance; this file governs intent, not command syntax.
 - TODO(SIGNING_IDENTITY) and TODO(TOOL_ADMIN_SCOPE) MUST be resolved by amendment.
 
-**Version**: 2.18.0 | **Ratified**: 2026-11-12 | **Last Amended**: 2026-11-13
+**Version**: 2.19.0 | **Ratified**: 2026-11-12 | **Last Amended**: 2026-11-13
