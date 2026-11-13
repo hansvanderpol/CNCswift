@@ -1,7 +1,45 @@
 <!--
 Sync Impact Report
 ==================
-Version change: 2.4.1 -> 2.5.0 (MINOR: spindle-only scope added)
+Version change: 2.5.0 -> 2.18.0 (thirteen MINOR amendments plus two PATCHes, all still
+uncommitted)
+
+Amendments:
+- 2.6.0 MINOR: output dialect fixed to standard G-code (ISO 6983 / RS-274); output file
+  extension fixed to .nc.
+- 2.7.0 MINOR: spindle narrowed to on/off only. Withdrawn before commit.
+- 2.8.0 MINOR: spindle speed control restored to the published TTC450 PRO specification:
+  variable 8,000-30,000 RPM, set with an S word and validated against the profile range.
+- 2.9.0 MINOR: dialect narrowed from ISO 6983 / RS-274 to GRBL 1.1, the dialect the TTC450
+  PRO controller runs; commands GRBL does not implement MUST NOT be emitted.
+- 2.9.1 PATCH: spindle range confirmed as the 8,000-30,000 RPM spindle supplied with the
+  TTC450 PRO; the per-installed-module hedge is removed.
+- 2.10.0 MINOR: maximum feed rate fixed at 800 mm/min; feeds above the maximum MUST be
+  rejected, never clamped.
+- 2.11.0 MINOR: spindle top speed corrected to 8,000 RPM for the supplied spindle; the
+  published 8,000-30,000 RPM range does not apply to this machine. Minimum commandable speed
+  is deferred to the machine profile.
+- 2.12.0 MINOR: work envelope fixed at 460 x 460 x 80 mm; the envelope is removed from the
+  remaining profile TODOs.
+- 2.13.0 MINOR: minimum spindle speed fixed at 5,000 RPM; the supported range is
+  5,000-8,000 RPM. Speeds below 5,000 RPM give poor cutting results and MUST be rejected.
+- 2.14.0 MINOR: maximum rapid-travel rate fixed at 800 mm/min, matching the feed ceiling;
+  rapids above the limit MUST be rejected, never clamped or downgraded to a cutting feed.
+- 2.15.0 MINOR: mandatory start block fixed: G21, G90, G94, G00 Z10.0, M3 S8000, in that
+  order, before any cutting move. The start sequence is removed from the profile TODOs; the
+  stop block remains TODO(MACHINE_PROFILE).
+- 2.15.1 PATCH: the 5,000-8,000 RPM spindle range is stated as inclusive of both endpoints.
+  No new limit; the v2.13.0 range is confirmed unchanged.
+- 2.16.0 MINOR: controller firmware and firmware version are removed from the machine
+  profile. The profile is defined by the GRBL 1.1 dialect and the machine's mechanical and
+  spindle limits; the app MUST NOT detect, query, or depend on a firmware version. The
+  firmware/version TODO is withdrawn.
+- 2.17.0 MINOR: mandatory stop block fixed: G90, G00 Z15.0, M5, G00 X0 Y0, M30, in that
+  order, after the last cutting move. The stop block is removed from the profile TODOs.
+- 2.18.0 MINOR: controller spindle limits recorded. `$30` is the maximum spindle speed and
+  `$31` the minimum; the profile requires `$30 = 8000` and `$31 = 5000`, set as machine
+  setup. The app MUST NOT read or change controller settings. TODO(MACHINE_PROFILE) is
+  resolved and withdrawn.
 
 Modified principles:
 - I. Swift 6 Language Mode and Strict Concurrency - unchanged
@@ -9,22 +47,18 @@ Modified principles:
 - III. Test-First - unchanged
 - IV. Native macOS Fidelity and Accessibility - unchanged
 - V. Observability, Diagnostics, and Error Discipline - unchanged
-- VI. Image and STL to Machine-Ready G-code - expanded: spindle-only tool activation, RPM
-  spindle speed, laser output prohibited
+- VI. Image and STL to Machine-Ready G-code - unchanged; fixed start and stop blocks,
+  800 mm/min rapid-travel ceiling, 5,000-8,000 RPM spindle range, 460 x 460 x 80 mm envelope,
+  800 mm/min feed ceiling, GRBL 1.1 dialect, and .nc output retained
 - VII. Two Modes over One Cutter Library - unchanged
 
 Added sections: none
 Removed sections: none
 
-Narrowed TODOs:
-- TODO(MACHINE_PROFILE): tool activation is now decided (spindle only), so the remaining
-  unknowns are dialect/firmware, envelope, feed and rapid limits, spindle speed range, and
-  start/stop sequences.
+Open TODOs: none. The machine profile has no unresolved facts.
 
 Follow-up TODOs:
 - TODO(SIGNING_IDENTITY): bundle identifier, signing team, notarization unknown.
-- TODO(MACHINE_PROFILE): dialect/firmware, work envelope, feed and rapid limits, spindle
-  speed range, and start/stop sequences are undecided.
 - TODO(TOOL_ADMIN_SCOPE): whether cutter administration also covers wear and life tracking,
   tool-change sheets, or machine offsets is unstated.
 -->
@@ -134,16 +168,64 @@ output: a G-code file that the target machine accepts.
   from image or mesh space to machine space MUST be explicit and covered by tests.
 - The target machine (TwoTrees TTC450 PRO) MUST be described by one versioned machine
   profile holding its dialect, work envelope, feed and rapid limits, tool activation, and
-  supported G/M codes. Pipeline code MUST NOT hardcode dialect tokens; another machine is a
-  new profile, never a new code path.
-- Only spindle tool activation is supported. G-code MUST select the spindle with the machine
-  profile's spindle command and express speed in RPM. Laser-specific output, including power
-  modulation, laser-mode enable settings, and dynamic-power moves, MUST NOT be emitted.
-  Adding laser support requires an amendment.
-- Emitted G-code MUST be validated before it is written: it MUST parse, stay inside the
-  envelope and declared limits, and include the profile's start, stop, and mode-setting
-  block. Geometry the profile cannot represent MUST fail loudly, never be approximated
-  silently.
+  supported G/M codes. The work envelope is 460 x 460 x 80 mm (X x Y x Z). Tool activation
+  is spindle-only, with speed set by an S word inside the profile's range. Pipeline code MUST
+  NOT hardcode dialect tokens; another machine is a new profile, never a new code path.
+- The profile's dialect MUST be GRBL 1.1, the dialect the TTC450 PRO controller runs.
+  Emitted programs MUST use only commands GRBL 1.1 implements; ISO 6983 / RS-274 features
+  GRBL does not implement, including `G43` tool-length offsets and `M6` tool changes, MUST
+  NOT be emitted. Vendor macros, custom M-codes, and controller extensions MUST NOT be
+  required to run a generated file. A controller with a different dialect is a new profile,
+  never a new code path.
+- Generated G-code MUST be written as a single plain-text file whose name uses the `.nc`
+  extension. Alternate extensions (`.gcode`, `.tap`, `.ngc`) MUST NOT be produced for this
+  profile without an amendment.
+- Only spindle tool activation is supported. G-code MUST start and stop the spindle with the
+  machine profile's spindle commands and MUST carry the spindle speed as an `S` word in RPM.
+  The supplied spindle runs between 5,000 and 8,000 RPM inclusive, so a commanded speed
+  outside that range MUST be rejected, never clamped; speeds below 5,000 RPM give poor
+  cutting results and MUST NOT be emitted. Laser-specific output, including power modulation,
+  laser-mode enable settings, and dynamic-power moves, MUST NOT be emitted. Adding laser
+  support requires an amendment.
+- Every generated program MUST open with the profile's start block, in exactly this order and
+  with no line omitted, before any cutting move:
+
+  ```gcode
+  G21         ; Set units to millimeters
+  G90         ; Use absolute positioning
+  G94         ; Feed rate per minute mode
+  G00 Z10.0   ; Raise Z-axis to a safe clearance height
+  M3 S8000    ; Start spindle clockwise at 8,000 RPM
+  ```
+
+  The sequence MUST NOT be reordered, truncated, or made conditional. The `S` word in the
+  `M3` line carries the program's spindle speed: the supplied sequence uses 8,000 RPM, and a
+  program that selects a different speed MUST emit that speed in place of `S8000`, still
+  inside the 5,000-8,000 RPM range.
+- Every generated program MUST end with the profile's stop block, in exactly this order and
+  with no line omitted, after the last cutting move:
+
+  ```gcode
+  G90         ; Ensure absolute positioning is active
+  G00 Z15.0   ; Lift the bit 15 mm above the work surface
+  M5          ; Turn off the 80W spindle
+  G00 X0 Y0   ; Return the spindle to the work origin
+  M30         ; End the program and reset the GRBL controller
+  ```
+
+  The sequence MUST NOT be reordered or truncated. `M5` MUST stop the spindle before the
+  program returns to the origin, and `M30` MUST be the final line of every file, so a program
+  never ends with the spindle running or with the bit at cutting depth.
+- Emitted feed rates MUST NOT exceed the machine profile's maximum feed rate, which is
+  800 mm/min for the TTC450 PRO. A feed rate above the maximum MUST be rejected, never
+  clamped.
+- Emitted rapid moves MUST NOT exceed the machine profile's maximum rapid-travel rate, which
+  is also 800 mm/min for the TTC450 PRO. A rapid above that limit MUST be rejected, never
+  clamped or silently downgraded to a cutting feed.
+- Emitted G-code MUST be validated before it is written: it MUST parse as GRBL 1.1, stay
+  inside the profile's 460 x 460 x 80 mm envelope and declared limits, and carry the fixed
+  start and stop blocks verbatim in their declared order. Geometry the profile cannot
+  represent MUST fail loudly, never be approximated silently.
 - Generation MUST be deterministic: the same input, settings, and profile MUST produce
   byte-identical output apart from a documented header.
 - The app writes files. It MUST NOT stream to, drive, or control machine hardware; adding
@@ -167,8 +249,8 @@ creation. They MUST stay separable, and they MUST share exactly one cutter defin
   override, or silently default cutter parameters; a missing required attribute blocks
   generation with an actionable error.
 - Cutter records MUST have stable identifiers, MUST be validated on entry (positive
-  dimensions, valid flute count, feeds and speeds inside the machine profile's limits), and
-  MUST be rejected at entry rather than at generation time.
+  dimensions, valid flute count, feed rates and spindle speeds inside the machine profile's
+  limits), and MUST be rejected at entry rather than at generation time.
 - Generated output MUST record the cutter identifier and the attribute values actually used,
   in the documented file header, so a file can be reproduced after the library changes.
   Saved work MUST reference cutters by identifier, never by copied values.
@@ -209,11 +291,21 @@ Two isolated modes over one library keep the toolpath reproducible from a file a
 - Inputs: raster image formats and STL (ASCII and binary) MUST be decoded by first-party
   packages or declared Apple frameworks, and a format is supported only once covered by
   fixtures.
-- Output: G-code files for the machine profile under Principle VI. No other machine-control
-  artifact is in scope without an amendment.
-- Machine profile: dialect, envelope, feed and rapid limits, spindle speed range, and
-  start/stop sequences are TODO(MACHINE_PROFILE) and MUST be fixed before the first generator
-  release. Tool activation is spindle-only; laser output is out of scope.
+- Output: G-code files with the `.nc` extension, in the machine profile's dialect under
+  Principle VI. No other machine-control artifact is in scope without an amendment.
+- Machine profile: the dialect is GRBL 1.1. The work envelope is 460 x 460 x 80 mm
+  (X x Y x Z). The supplied spindle runs 5,000-8,000 RPM inclusive. The controller supports
+  `$30` as the maximum spindle speed and `$31` as the minimum, so the profile requires
+  `$30 = 8000` and `$31 = 5000`; setting them is machine setup, not app behaviour, and the
+  app MUST NOT read or change controller settings. The maximum feed rate is 800 mm/min and
+  the maximum rapid-travel rate is also 800 mm/min, so every emitted move is capped at that
+  rate. Every program opens with the fixed start block under Principle VI: `G21`, `G90`,
+  `G94`, `G00 Z10.0`, and `M3` with an `S` word. Every program closes with the fixed stop
+  block under Principle VI: `G90`, `G00 Z15.0`, `M5`, `G00 X0 Y0`, and `M30`. Controller
+  firmware and firmware version are explicitly out of scope for the implementation: the
+  profile is defined by the GRBL 1.1 dialect and the machine's mechanical and spindle
+  limits, not by a firmware build, and the app MUST NOT detect, query, or depend on a
+  firmware version. Tool activation is spindle-only; laser output is out of scope.
 - Distribution, bundle identifier, signing, and notarization are TODO(SIGNING_IDENTITY) and
   MUST be settled before a release plan is written.
 
@@ -250,7 +342,6 @@ Two isolated modes over one library keep the toolpath reproducible from a file a
 - Complexity MUST be justified against Principle II: new modules, dependencies, and
   `@unchecked Sendable` all require explicit rationale.
 - `AGENTS.md` holds runtime guidance; this file governs intent, not command syntax.
-- TODO(SIGNING_IDENTITY), TODO(MACHINE_PROFILE), and TODO(TOOL_ADMIN_SCOPE) MUST be resolved
-  by amendment.
+- TODO(SIGNING_IDENTITY) and TODO(TOOL_ADMIN_SCOPE) MUST be resolved by amendment.
 
-**Version**: 2.5.0 | **Ratified**: 2026-11-12 | **Last Amended**: 2026-11-13
+**Version**: 2.18.0 | **Ratified**: 2026-11-12 | **Last Amended**: 2026-11-13
