@@ -1,8 +1,8 @@
 <!--
 Sync Impact Report
 ==================
-Version change: 2.5.0 -> 2.19.0 (fourteen MINOR amendments plus two PATCHes, all still
-uncommitted)
+Version change: 2.5.0 -> 4.0.0 (sixteen MINOR amendments, two PATCHes, and two MAJOR, all
+still uncommitted)
 
 Amendments:
 - 2.6.0 MINOR: output dialect fixed to standard G-code (ISO 6983 / RS-274); output file
@@ -42,6 +42,21 @@ Amendments:
   resolved and withdrawn.
 - 2.19.0 MINOR: bundle identifier fixed at `com.hansvanderpol.CNCswift` and locked against
   change without an amendment. Signing team and notarization stay TODO(SIGNING_IDENTITY).
+- 2.20.0 MINOR: scope fixed as local build and run. The app is not prepared for the App
+  Store or any other distribution channel; no App Store submission, Developer ID signing, or
+  notarization. Local builds use Xcode's default local signing. TODO(SIGNING_IDENTITY) is
+  resolved and withdrawn.
+- 3.0.0 MAJOR: Principle VI renamed from "Image and STL to Machine-Ready G-code" to "STL to
+  Machine-Ready G-code". Raster image input is removed from the G-code creation mode, which
+  now accepts STL meshes only. Image input is out of scope until an amendment restores it.
+- 3.1.0 MINOR: cutter library scope fixed to cutter attributes only. Wear and life
+  tracking, tool-change sheets, machine offsets, and job or machine management features are
+  out of scope. TODO(TOOL_ADMIN_SCOPE) is resolved and withdrawn.
+- 4.0.0 MAJOR: Principle VII redefined from "Two Modes over One Cutter Library" to "G-code
+  Main Screen and Cutter Library Modal". The cutter administration mode is removed. G-code
+  creation is the only user-facing mode, presented on a main screen with cutter selection,
+  carving material with dimensions, and G-code simulation panels; cutter-library maintenance
+  is a separate modal view. The cutter library remains a separate package.
 
 Modified principles:
 - I. Swift 6 Language Mode and Strict Concurrency - unchanged
@@ -49,21 +64,25 @@ Modified principles:
 - III. Test-First - unchanged
 - IV. Native macOS Fidelity and Accessibility - unchanged
 - V. Observability, Diagnostics, and Error Discipline - unchanged
-- VI. Image and STL to Machine-Ready G-code - unchanged; fixed start and stop blocks,
-  800 mm/min rapid-travel ceiling, 5,000-8,000 RPM spindle range, 460 x 460 x 80 mm envelope,
-  800 mm/min feed ceiling, GRBL 1.1 dialect, and .nc output retained
-- VII. Two Modes over One Cutter Library - unchanged
+- VI. Image and STL to Machine-Ready G-code -> STL to Machine-Ready G-code: image input
+  removed, image-specific validation and coordinate language removed, STL-only rule added;
+  fixed start and stop blocks, 800 mm/min rapid-travel ceiling, 5,000-8,000 RPM spindle
+  range, 460 x 460 x 80 mm envelope, 800 mm/min feed ceiling, GRBL 1.1 dialect, and .nc
+  output retained
+- VII. Two Modes over One Cutter Library -> G-code Main Screen and Cutter Library Modal: the
+  cutter administration mode is removed; G-code creation is the only user-facing mode; the
+  main screen carries cutter selection, carving material with dimensions, and G-code
+  simulation panels; cutter-library maintenance is a separate modal view; the cutter library
+  scope stays limited to cutter attributes (wear and life tracking, tool-change sheets,
+  machine offsets, and job or machine management remain out of scope)
 
 Added sections: none
 Removed sections: none
 
-Open TODOs: none. The machine profile has no unresolved facts.
+Open TODOs: none. The machine profile, distribution scope, and cutter library scope have no
+unresolved facts.
 
-Follow-up TODOs:
-- TODO(SIGNING_IDENTITY): signing team and notarization unknown; the bundle identifier is
-  fixed at `com.hansvanderpol.CNCswift`.
-- TODO(TOOL_ADMIN_SCOPE): whether cutter administration also covers wear and life tracking,
-  tool-change sheets, or machine offsets is unstated.
+Follow-up TODOs: none.
 -->
 
 # CNCswift Constitution
@@ -155,20 +174,20 @@ Failures MUST be diagnosable from logs alone.
 
 Rationale: structured logs and typed errors turn a support report into a reproducible bug.
 
-### VI. Image and STL to Machine-Ready G-code
+### VI. STL to Machine-Ready G-code
 
-The G-code creation mode has exactly two input families, images and STL meshes, and one
-output: a G-code file that the target machine accepts.
+The G-code creation mode has exactly one input family, STL meshes, and one output: a G-code
+file that the target machine accepts. Raster image input is out of scope for this version;
+adding it requires an amendment.
 
 - Stages MUST be separate packages with typed boundaries: decode, toolpath generation,
   post-processing, and validation. No stage imports UI, and no view parses files or formats
   G-code.
 - Inputs MUST be validated, and invalid ones rejected with actionable errors: unsupported or
-  corrupt files, empty or non-manifold meshes, zero-area images. Silent repair and silent
-  default scaling are prohibited; missing scale, units, or orientation MUST be requested
-  explicitly.
+  corrupt files, empty meshes, and non-manifold meshes. Silent repair and silent default
+  scaling are prohibited; missing scale, units, or orientation MUST be requested explicitly.
 - Geometry MUST be millimetres in a declared coordinate system and origin. The transform
-  from image or mesh space to machine space MUST be explicit and covered by tests.
+  from mesh space to machine space MUST be explicit and covered by tests.
 - The target machine (TwoTrees TTC450 PRO) MUST be described by one versioned machine
   profile holding its dialect, work envelope, feed and rapid limits, tool activation, and
   supported G/M codes. The work envelope is 460 x 460 x 80 mm (X x Y x Z). Tool activation
@@ -237,16 +256,25 @@ output: a G-code file that the target machine accepts.
 Rationale: the G-code is the product. A toolpath the controller rejects, or one that cuts
 outside the bed, is a broken build, not a cosmetic bug.
 
-### VII. Two Modes over One Cutter Library
+### VII. G-code Main Screen and Cutter Library Modal
 
-The application has exactly two user-facing modes: mill cutter administration and G-code
-creation. They MUST stay separable, and they MUST share exactly one cutter definition.
+The application has exactly one user-facing mode, G-code creation, presented on a main screen.
+Cutter-library maintenance is presented in a separate modal view. The main screen and the
+modal MUST stay separable, and they MUST share exactly one cutter definition.
 
-- Each mode MUST be a separate module with its own view models and its own entry point, and
-  each MUST be usable without the other running. Modes MUST NOT share mutable in-memory
-  state; the persisted cutter library is the only shared contract between them.
-- Cross-mode imports are limited to the cutter library, shared geometry, and shared
-  persistence packages. A mode MUST NOT reach into another mode's views or internal types.
+- The main screen MUST present three panels: cutter selection, carving material with its
+  dimensions, and a G-code simulation view. The main screen MUST NOT embed cutter-library
+  maintenance; that maintenance MUST be presented in a modal view opened from the main screen.
+- The main screen and the cutter library modal MUST each be a separate module with its own
+  view models and its own entry point, and each MUST be usable without the other running.
+  They MUST NOT share mutable in-memory state; the persisted cutter library is the only
+  shared contract between them.
+- The cutter library modal MUST manage cutter attributes only. Wear and life tracking,
+  tool-change sheets, machine offsets, and job or machine management features are out of
+  scope; adding any of them requires an amendment.
+- Cross-presentation imports are limited to the cutter library, shared geometry, and shared
+  persistence packages. Neither the main screen nor the modal MUST reach into the other's
+  views or internal types.
 - The cutter library MUST be the single authoritative record of mill cutters (end mills) and
   their typed attributes. G-code creation MUST consume cutters read-only and MUST NOT define,
   override, or silently default cutter parameters; a missing required attribute blocks
@@ -275,7 +303,8 @@ creation. They MUST stay separable, and they MUST share exactly one cutter defin
   changes and MUST NOT be reused from a cache.
 
 Rationale: duplicated cutter data is how a router ends up cutting with the wrong end mill.
-Two isolated modes over one library keep the toolpath reproducible from a file already cut.
+One isolated main screen and one library modal over one library keep the toolpath
+reproducible from a file already cut.
 
 ## Technology Stack and Toolchain
 
@@ -290,10 +319,11 @@ Two isolated modes over one library keep the toolpath reproducible from a file a
 - Formatting: `swift-format` configured at the repository root, applied to all Swift
   sources, enforced in CI. First-party targets MUST treat warnings as errors.
 - Dependencies: Apple frameworks first. Every third-party package MUST be justified,
-  maintained, and license-compatible with distribution outside the App Store unless stated.
-- Inputs: raster image formats and STL (ASCII and binary) MUST be decoded by first-party
-  packages or declared Apple frameworks, and a format is supported only once covered by
-  fixtures.
+  maintained, and license-compatible with the project's local build-and-run scope unless
+  stated.
+- Inputs: STL files, ASCII and binary, MUST be decoded by first-party packages or declared
+  Apple frameworks, and a format is supported only once covered by fixtures. Raster image
+  input is out of scope and MUST NOT be added without an amendment.
 - Output: G-code files with the `.nc` extension, in the machine profile's dialect under
   Principle VI. No other machine-control artifact is in scope without an amendment.
 - Machine profile: the dialect is GRBL 1.1. The work envelope is 460 x 460 x 80 mm
@@ -327,9 +357,9 @@ Two isolated modes over one library keep the toolpath reproducible from a file a
 - Generator changes MUST add or update golden-file fixtures (input -> reviewed output) and
   pass envelope and limit-conformance tests; a changed expected file MUST be reviewed as
   production output.
-- Changes spanning both modes MUST include a tool-library contract test proving that a
-  cutter edited in one mode produces the expected output in the other, and schema migrations
-  MUST be tested against fixtures from the prior version.
+- Changes spanning the main screen and the library modal MUST include a tool-library contract
+  test proving that a cutter edited in the modal produces the expected output in G-code
+  creation, and schema migrations MUST be tested against fixtures from the prior version.
 - Pull requests MUST be small, state the principles they touch, and MUST NOT merge with
   failing or disabled tests or skipped concurrency checks.
 - `AGENTS.md` MUST record the build, test, and lint commands once they exist; it is the
@@ -349,6 +379,5 @@ Two isolated modes over one library keep the toolpath reproducible from a file a
 - Complexity MUST be justified against Principle II: new modules, dependencies, and
   `@unchecked Sendable` all require explicit rationale.
 - `AGENTS.md` holds runtime guidance; this file governs intent, not command syntax.
-- TODO(SIGNING_IDENTITY) and TODO(TOOL_ADMIN_SCOPE) MUST be resolved by amendment.
 
-**Version**: 2.19.0 | **Ratified**: 2026-11-12 | **Last Amended**: 2026-11-13
+**Version**: 4.0.0 | **Ratified**: 2026-11-12 | **Last Amended**: 2026-11-15
