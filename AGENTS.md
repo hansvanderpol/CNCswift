@@ -1,5 +1,27 @@
 # AGENTS.md
 
+## Coding standards
+- Write clean, maintainable code.
+- Follow existing project conventions.
+- Avoid unnecessary dependencies.
+- Handle errors properly.
+- Never silently remove existing functionality.
+- Keep changes focused.
+
+## Agent behaviour
+- Use terminal tools when needed.
+- Read relevant files before editing.
+- Continue working until the requested task is complete.
+- Do not stop after merely proposing a solution.
+- Verify that the implementation works.
+- Report anything that could not be verified.
+
+## Safety
+- Ask before deleting important files.
+- Ask before deploying or publishing.
+- Never expose secrets or API keys.
+- Never execute destructive commands without approval.
+
 ## Repository state
 - This is a Spec-Driven Development (SDD) workspace created by GitHub Spec Kit 1.3.3 with the OpenCode integration. It contains only `.specify/` scaffolding and `.opencode/` commands/skills — no application source, build system, tests, README, or git repository.
 - `.idea/` configures JDK 25, but no Java build exists. Do not assume a stack; establish it in the constitution and each feature's `plan.md`.
