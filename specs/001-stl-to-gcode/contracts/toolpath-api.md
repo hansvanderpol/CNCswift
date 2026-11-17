@@ -39,7 +39,7 @@ Each shared value type has exactly one home, so no stage has to guess where a `M
 
 | Type | Package |
 |---|---|
-| `Vec3`, `Mesh`, `AABB`, `BVH`, `Transform` | `CNCGeometry` |
+| `Vec3`, `Mesh`, `AABB`, `BVH`, `Transform`, `EffectiveRadius`, `FeatureReport` | `CNCGeometry` |
 | `MeshDocument`, `STLModel`, `DecodeError` | `CNCSTL` |
 | `MachineProfile`, `Envelope`, `StartBlock`, `StopBlock` | `CNCMachineProfile` |
 | `Cutter`, `CutterType`, `CutterLibrary`, `CutterValidationError` | `CNCCutters` |
@@ -98,9 +98,15 @@ public protocol ToolpathPlanning: Sendable {
         progress: ProgressSink
     ) async throws -> Toolpath
 }
+
+public struct FeatureReport: Sendable, Equatable {
+    public let smallestConcaveRadius: Double   // millimetres
+    public let effectiveRadius: Double          // millimetres, from CNCGeometry
+}
 ```
 
-- Preconditions: model units and orientation confirmed; cutter resolves and is valid; material resolves; effective values confirmed; rapid-rate setup confirmed; stock inside the envelope; settings confirmed.
+- Preconditions: model units and orientation confirmed; cutter resolves and is valid; material resolves; effective values confirmed; rapid-rate setup confirmed; stock inside the envelope; `cutterReach` true; settings confirmed.
+- Preflight produces `FeatureReport`; when `smallestConcaveRadius < effectiveRadius`, planning throws `.featureTooSmall` and the UI shows both radii in millimetres (FR-041).
 - Throws: `PlanningError.modelOutsideStock`, `.featureTooSmall`, `.depthExceedsCuttingLength`, `.invalidStepover`, `.invalidAllowance`, `.envelopeExceeded`, `.unconfirmedEffectiveValues`, `.rapidSetupUnconfirmed`.
 - Emits ordered `Move` values with `mode` (`rapid` or `cut`); cutting moves carry the job's confirmed effective feed, never the cutter record's value (FR-040).
 - Pure function of its inputs; no I/O, no clock, no randomness.
@@ -131,7 +137,7 @@ public struct RenderedProgram: Sendable {
 - Applies `startBlock` and `stopBlock` from the profile, with `{spindleSpeed}` substituted from `job.effective.spindle` (FR-022).
 - Never writes an `F` word on a `G0` line (FR-024).
 - `generatedAt` is injected; the renderer never reads the system clock (Principle III).
-- Writes the file through an injected file system, atomically (FR-027).
+- Does not write a file. Rendering returns text plus its `GenerationRecord` only; the atomic writer in `CNCGCode` is invoked solely by `PipelineRunning.commit` (FR-027, spec clarification Q6).
 
 ## Validation
 
@@ -193,6 +199,12 @@ public protocol MaterialLibraryStoring: Sendable {
 ```swift
 public protocol PipelineRunning: Sendable {
     func run(_ request: GenerationRequest, progress: ProgressSink) async throws -> PipelineOutcome
+    func commit(_ program: RenderedProgram, confirmation: WriteConfirmation, to destination: URL) async throws
+}
+
+public struct WriteConfirmation: Sendable {
+    public let previewShown: Bool
+    public let findingsAcknowledged: Bool
 }
 
 public struct GenerationRequest: Sendable {
@@ -206,16 +218,31 @@ public struct GenerationRequest: Sendable {
 }
 
 public enum PipelineOutcome: Sendable {
-    case written(RenderedProgram, ValidationReport, SimulationResult)
+    case ready(RenderedProgram, ValidationReport, SimulationResult)
     case blocked([Finding])
     case cancelled
 }
 ```
 
-- `run` performs decode (when given a URL rather than a decoded document), plan, render, validate, simulate, write, in that order.
-- Writing happens only after validation reports zero error-severity findings and simulation completes (FR-026, FR-064).
+- `run` decodes, plans, renders program text, validates, and simulates, in that order. It writes no file: a successful run returns `.ready` with the validated program and simulation result for the preview; a blocked or cancelled simulation returns `.blocked` or `.cancelled` (FR-064, FR-069).
+- "Render" in this contract means rendering G-code text, not rendering the 3D preview. The preview is the simulation stage and consumes the validated `ParsedProgram` (FR-065).
 - Cancellation is its own outcome, logged in its own category and shown as cancelled, never as an error (FR-069).
 - The actor owns no UI types and returns value types only.
+
+## Commit
+
+`CNCGCode` owns `ProgramWriter`; only `PipelineRunning.commit` may call it.
+
+```swift
+public protocol ProgramWriter: Sendable {
+    func write(_ program: RenderedProgram, to url: URL) async throws
+}
+```
+
+- `commit` requires a `WriteConfirmation` produced after the preview was shown and all findings were acknowledged (spec clarification Q6).
+- `commit` writes exactly one atomically replaced `.nc` file with the ASCII filename derived under `contracts/gcode-output.md` (FR-018, FR-027).
+- `commit` writes only when validation reports zero error-severity findings and simulation completed without unacknowledged violations (FR-026, FR-064, FR-066).
+- A `.blocked` or `.cancelled` run cannot reach `commit`; no task may make the renderer write to disk.
 
 ## Progress and cancellation
 

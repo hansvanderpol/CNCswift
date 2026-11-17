@@ -14,7 +14,10 @@
 
 - Q: Should the cutting feed rate and spindle speed depend on the material being carved, or stay fixed per cutter? → A: Material sets a recommended feed and spindle band; the effective value is chosen inside the intersection of that band and the profile limits, prefilled from the cutter's record, confirmed per job, and recorded in the header with the material.
 - Q: How should the 800 mm/min rapid-travel ceiling actually be enforced, given that GRBL's G0 move ignores any feed word? → A: Treat the rapid rate as machine setup through the controller's rapid-rate settings, keep every rapid above the stock at clearance height, and emit no feed word on a rapid.
-- Q: Which materials should ship as built-in presets in the first version? → A: Wood and composites only: softwood (pine/basswood), hardwood (oak/maple), MDF, and plywood.
+- Q: Which materials should ship as built-in presets in the first version? → A: Wood and wood composites only: softwood (pine/basswood), hardwood (oak/maple), MDF, and plywood. MDF and plywood are the composites in scope.
+- Q: What counts as a model feature "smaller than the cutter"? → A: A concave feature whose smallest inscribed radius is below the cutter's effective radius at the configured finishing stepover; the report gives both radii in millimetres and blocks generation.
+- Q: What is the "reference model set" used by SC-003 and SC-012? → A: A fixed, versioned set of five STL fixtures committed under `Fixtures/stl/` and enumerated in `Fixtures/README.md`: an ASCII relief, a binary relief, a 200,000-triangle relief, a deep cavity, and a fine-detail relief. SC-012's 95% threshold is measured over this set; adding or removing a model requires an amendment.
+- Q: When is the `.nc` file actually written relative to the 3D preview? → A: Generation builds and validates the program and renders the preview; the file is written only on a separate, explicit commit after the user has seen the preview and acknowledged any findings. No file is written by generation alone.
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -74,7 +77,7 @@ Before committing a job, the maker looks at the simulation panel and sees the ma
 1. **Given** a validated program, **When** the simulation panel renders it, **Then** the display shows the stock blank with removed material following the model's shape, viewed in 3D.
 2. **Given** the same program, **When** the user inspects the preview, **Then** rapid repositioning moves are visibly distinguished from cutting moves and remove no material.
 3. **Given** a program containing a move outside the envelope, **When** the simulation renders, **Then** the offending move is highlighted and named before the file is written.
-4. **Given** a large model, **When** simulation runs, **Then** progress is reported and the operation can be cancelled, and a cancelled simulation is reported as cancelled rather than failed.
+4. **Given** a model with at least 50,000 triangles, **When** simulation runs, **Then** progress is reported and the operation can be cancelled, and a cancelled simulation is reported as cancelled rather than failed.
 5. **Given** a model whose units were mis-confirmed, **When** the preview renders, **Then** the mismatch is visible as a carve that does not match the intended shape, allowing the user to stop before writing.
 
 ---
@@ -135,16 +138,17 @@ Before committing a job, the maker looks at the simulation panel and sees the ma
 - **FR-019**: System MUST open every generated program with the profile's start block, in exactly this order and with no line omitted, before any cutting move: `G21`, `G90`, `G94`, `G00 Z10.0`, and `M3` carrying the `S` word.
 - **FR-020**: System MUST close every generated program with the profile's stop block, in exactly this order and with no line omitted, after the last cutting move: `G90`, `G00 Z15.0`, `M5`, `G00 X0 Y0`, `M30`.
 - **FR-021**: System MUST make `M30` the final line of every generated file, and MUST stop the spindle with `M5` before returning to the origin.
-- **FR-022**: System MUST carry the spindle speed as an `S` word in RPM resolved from the selected material's band and the cutter's recorded value (FR-079), and MUST reject a speed outside 5,000-8,000 RPM inclusive rather than clamping it.
+- **FR-022**: System MUST carry the spindle speed as an `S` word in RPM; the value MUST be the effective spindle speed resolved under FR-079, and the system MUST reject a speed outside 5,000-8,000 RPM inclusive rather than clamping it.
 - **FR-023**: System MUST reject any cutting feed above 800 mm/min rather than clamping it.
 - **FR-024**: System MUST emit every rapid traverse as a `G0` move carrying no feed word, and MUST NOT claim in the file to control the rapid rate, because the profile's dialect ignores any feed word on a rapid; the 800 mm/min rapid ceiling MUST instead be met by the controller's rapid-rate settings, documented as required machine setup and confirmed on the main screen before generation, working together with the clearance-height rule in FR-039.
 - **FR-025**: System MUST keep every emitted move inside the profile's 460 x 460 x 80 mm envelope, treating the boundary itself as inside, and MUST fail loudly for geometry the profile cannot represent rather than approximating it.
 - **FR-026**: System MUST validate a program before writing it: it MUST parse as GRBL 1.1, stay inside the envelope and declared limits, and carry the start and stop blocks verbatim in their declared order.
 - **FR-027**: System MUST write the file atomically, so that no partially written or intermediate file is ever visible as the result.
 - **FR-028**: System MUST produce deterministic output: the same model, confirmed settings, and profile version MUST yield byte-identical files apart from the documented header fields.
-- **FR-029**: System MUST record in the file header the cutter identifier, the cutter type, the attribute values actually used, the material and its effective values as required by FR-081, the machine profile version, the job settings, the declared units and origin, and any confirmed scale.
+- **FR-029**: System MUST record in the file header the cutter identifier, the cutter type, the attribute values actually used, the machine profile version, the job settings, the declared units and origin, any confirmed scale, and the material fields defined by FR-081.
 - **FR-030**: System MUST NOT stream to, drive, or control machine hardware; writing the file is the only output.
 - **FR-031**: System MUST NOT emit laser-specific output, including power modulation, laser-mode enable settings, and dynamic-power moves.
+- **FR-082**: System MUST emit every G-code line, including header and comment lines, with at most 80 characters, and MUST reject any program containing a longer line rather than emitting it.
 
 #### Toolpath generation
 
@@ -153,11 +157,11 @@ Before committing a job, the maker looks at the simulation panel and sees the ma
 - **FR-034**: System MUST leave the user's finishing allowance of material after roughing, and MUST reject an allowance that is negative or that consumes the whole stock depth.
 - **FR-035**: System MUST apply the user's stepover to the finishing pass, and MUST reject a stepover that is not greater than zero or that is at or above the cutter's cutting diameter.
 - **FR-036**: System MUST derive every toolpath shape from the selected cutter's recorded geometry, and MUST recompute toolpaths when that geometry changes rather than reusing a stale result.
-- **FR-037**: System MUST prefill suggested job settings derived from the selected cutter and stock, and MUST require explicit confirmation before generation; an unconfirmed value MUST NOT be applied.
+- **FR-037**: System MUST prefill job-strategy settings (stepover, maximum depth per pass, and finishing allowance) derived from the selected cutter and stock, and MUST require explicit confirmation before generation; an unconfirmed value MUST NOT be applied. This job-strategy prefill is distinct from the cutting-value prefill in FR-079.
 - **FR-038**: System MUST restrict carving to the model's footprint plus at most the cutter's radius of margin, and MUST NOT sweep the whole blank.
 - **FR-039**: System MUST perform rapid repositioning at the profile's clearance height and MUST NOT rapid through material.
-- **FR-040**: System MUST resolve the cutting feed rate and spindle speed for each job from the selected material and cutter as defined in FR-079, MUST require explicit per-job confirmation of both values, and MUST NOT substitute an unconfirmed or out-of-range value at generation time.
-- **FR-041**: System MUST report, before generation, any model feature smaller than the selected cutter can carve.
+- **FR-040**: System MUST require explicit per-job confirmation of both the cutting feed rate and spindle speed resolved under FR-079 before generation, and MUST NOT substitute an unconfirmed value at generation time.
+- **FR-041**: System MUST report, before generation, any model feature smaller than the selected cutter can carve. A feature is "too small" when its smallest concave radius is below the cutter's effective radius at the configured finishing stepover. The report MUST state both radii in millimetres and MUST block generation until the model, cutter, or stepover changes.
 
 #### Cutter library
 
@@ -191,13 +195,13 @@ Before committing a job, the maker looks at the simulation panel and sees the ma
 - **FR-063**: System MUST distinguish rapid moves from cutting moves in the preview and MUST NOT remove material for rapid moves.
 - **FR-064**: System MUST highlight and name any envelope or limit violation in the preview before the file is written.
 - **FR-065**: System MUST simulate the same validated program that is written, and MUST NOT derive the preview from a separate, divergent path.
-- **FR-066**: System MUST report progress and allow cancellation during simulation, and MUST report cancellation as distinct from failure.
+- **FR-066**: System MUST report progress and allow cancellation during simulation for any model with at least 50,000 triangles, and MUST report cancellation as distinct from failure.
 
 #### Diagnostics, accessibility, and privacy
 
 - **FR-067**: System MUST use typed errors, show the user an actionable message, and record the cause with a stable correlation identifier in a structured log.
 - **FR-068**: System MUST log through per-module structured logging with stable categories, and MUST NOT use unstructured console printing in shipping code.
-- **FR-069**: System MUST report progress and allow cancellation for decoding, generation, and simulation, and MUST distinguish cancellation from failure in both the log and the interface.
+- **FR-069**: System MUST report progress and allow cancellation for decoding, generation, and simulation whenever the model has at least 50,000 triangles, and MUST distinguish cancellation from failure in both the log and the interface.
 - **FR-070**: System MUST make every primary workflow operable by keyboard alone, and MUST expose accessibility labels, roles, and values on custom controls.
 - **FR-071**: System MUST honor VoiceOver, Increase Contrast, Reduce Motion, and full keyboard access.
 - **FR-072**: System MUST follow macOS conventions for the menu bar, standard shortcuts, window restoration, and settings.
@@ -210,9 +214,9 @@ Before committing a job, the maker looks at the simulation panel and sees the ma
 
 - **FR-077**: System MUST model the carving material as an entity carrying a name, a recommended cutting-feed band in mm/min, and a recommended spindle-speed band in RPM, kept separate from the stock blank's dimensions; the app MUST ship exactly four built-in presets — softwood (pine/basswood), hardwood (oak/maple), MDF, and plywood — and MUST allow the user to define additional materials that persist across launches.
 - **FR-078**: System MUST validate a material at entry: every band bound MUST be greater than zero and a band's lower bound MUST NOT exceed its upper bound; a malformed band MUST be rejected with an actionable message and MUST NOT be corrected, widened, or clamped.
-- **FR-079**: System MUST resolve each effective value as the intersection of the material's recommended band and the machine profile's limits, MUST let the user confirm any value inside that intersection for the job, MUST prefill the selected cutter's recorded value when it lies inside the intersection and otherwise the nearest bound of the intersection, and MUST NOT apply a value outside the intersection.
+- **FR-079**: System MUST resolve each effective cutting value (feed rate and spindle speed) as the intersection of the material's recommended band and the machine profile's limits, MUST let the user confirm any value inside that intersection for the job, MUST prefill the selected cutter's recorded value when it lies inside the intersection and otherwise the nearest bound of the intersection, and MUST NOT apply a value outside the intersection. This cutting-value prefill is distinct from the job-strategy prefill in FR-037.
 - **FR-080**: System MUST reject, before generation, a material whose feed or spindle band has no value in common with the machine profile's limits, naming the material, the band, and the ceiling or floor it cannot satisfy, and MUST NOT clamp the band into range.
-- **FR-081**: System MUST record in the file header the material name, its recommended bands, and the effective feed rate and spindle speed actually used, alongside the selected cutter's recorded values.
+- **FR-081**: System MUST record in the file header the material name, its recommended feed and spindle bands, and the effective feed rate and spindle speed actually used, alongside the selected cutter's recorded values. This is the single canonical list of material header fields referenced by FR-029.
 
 ### Key Entities *(include if feature involves data)*
 
@@ -232,7 +236,7 @@ Before committing a job, the maker looks at the simulation panel and sees the ma
 
 ### Measurable Outcomes
 
-- **SC-001**: A user with an existing cutter record can go from choosing an STL to a written `.nc` file for a 200,000-triangle model in under 5 minutes on the reference Mac, with no external documentation.
+- **SC-001**: A user with an existing cutter record can go from choosing an STL to a written `.nc` file for a 200,000-triangle model in under 5 minutes on the reference machine (macOS 27.2.1, arm64 Apple silicon), with no external documentation.
 - **SC-002**: 100% of generated files pass an independent check of GRBL 1.1 syntax, the 460 x 460 x 80 mm envelope, the 800 mm/min feed ceiling, the recorded controller rapid-rate setting, and the 5,000-8,000 RPM spindle range on the first attempt.
 - **SC-003**: Zero generated files contain a reordered, truncated, or missing start or stop block, or a final line other than `M30`, across the full reference model set.
 - **SC-004**: 100% of invalid inputs — corrupt, truncated, empty, non-manifold, oversize, under-specified cutter, or out-of-range value — are rejected with a message naming the problem and the fix, and zero are silently repaired, clamped, scaled, or defaulted.
@@ -254,13 +258,13 @@ Before committing a job, the maker looks at the simulation panel and sees the ma
 - "Carving material" has two parts: a named material carrying recommended cutting-feed and spindle-speed bands, and the stock blank's dimensions. A machine ceiling of 800 mm/min is lower than what many materials and cutters would normally allow, so the profile's limits, not the material band alone, bound the effective value.
 - Feed rate and spindle speed are chosen per job inside the intersection of the material's band and the profile's limits, prefilled from the cutter's record, because the same cutter is run differently in softwood and in MDF.
 - The four built-in preset bands are starting recommendations for a machine of this class, not certified cutting data; the user confirms the actual value for each job rather than treating the preset as authority.
-- Materials outside the four presets are the user's own definitions; the first version ships no metal, glass, stone, or composite-fibre bands, and nothing in the app claims those materials are safe to cut.
+- Materials outside the four presets are the user's own definitions; the first version ships no metal, glass, stone, or non-wood composite-fibre bands, and nothing in the app claims those materials are safe to cut. MDF and plywood are wood composites and are included in the four presets.
 - The controller's rapid-rate settings are machine setup performed once by the operator, since GRBL's `G0` accepts no feed word; the app documents the required values and records the confirmation rather than pretending the program enforces them.
 - Stepover, maximum depth per pass, and finishing allowance are job settings, not cutter attributes, because they describe the machining strategy rather than the tool.
 - The reference machine is the TwoTrees TTC450 PRO, described by one machine profile; a second machine would be a new profile rather than new code.
 - The cutter library starts empty on first run, and a cutter must exist before any file can be generated.
 - The app is built and run locally on the developer's Mac; signing, notarisation, and distribution are out of scope.
-- The reference environment is a current stable macOS release on Apple silicon.
+- The reference environment is macOS 27.2.1 on arm64 Apple silicon, matching the verified toolchain recorded in `plan.md`.
 
 ## Out of Scope
 

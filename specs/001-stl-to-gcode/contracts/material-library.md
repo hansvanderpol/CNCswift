@@ -15,9 +15,9 @@ Exactly four presets ship, read-only, merged into the library at load (FR-077):
 | MDF | 500-700 | 7000-8000 |
 | Plywood | 500-700 | 7000-8000 |
 
-The values are provisional engineering guidance for a 500 W-class spindle, pending sign-off (research D11). They live in one preset table with a fixture that asserts the count, the names, the band order, and that every bound is positive. The spec deliberately does not contain these numbers; they are data, not requirements.
+The values are provisional engineering guidance for a 500 W-class spindle until cutting-experience sign-off is recorded in `Fixtures/materials/README.md` (research D11, task T111). They live in one preset table with a fixture that asserts the count, the names, the band order, and that every bound is positive; the fixture is marked provisional until sign-off. The spec deliberately does not contain these numbers; they are data, not requirements. Sign-off does not replace per-job confirmation.
 
-No metal, glass, stone, or composite-fibre presets ship. A user may define a material for anything, and the app makes no safety claim about it.
+No metal, glass, stone, or non-wood composite-fibre presets ship; MDF and plywood are the wood composites included in the four presets. A user may define a material for anything, and the app makes no safety claim about it.
 
 ## Material record
 
@@ -119,7 +119,7 @@ Presets are not written to the document. They are code-shipped data merged at lo
 
 | Test | Proves |
 |---|---|
-| Preset fixture: exactly four, names and ordered bands | FR-077 |
+| Preset fixture: exactly four, names and ordered bands, marked provisional until `Fixtures/materials/README.md` records sign-off | FR-077, research D11 |
 | Malformed band rejected at entry, record not stored | FR-078 |
 | Cutter inside intersection prefills with its own value | FR-079 |
 | Cutter outside intersection prefills the nearest bound and flags the source | FR-079 |

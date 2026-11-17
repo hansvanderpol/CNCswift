@@ -56,7 +56,7 @@ A band may sit entirely outside the profile's limits; that is a valid record and
 | MDF | 500-700 | 7,000-8,000 |
 | Plywood | 500-700 | 7,000-8,000 |
 
-Exactly four presets ship (FR-077). The values are provisional engineering guidance pending sign-off (research D11), and a fixture asserts the count, the names, and that every band is ordered.
+Exactly four presets ship (FR-077). The values are provisional engineering guidance until cutting-experience sign-off is recorded in `Fixtures/materials/README.md` (research D11, task T111). The fixture asserts the count, the names, and the band order, and is marked provisional until sign-off; per-job confirmation remains mandatory and generation is not blocked by the pending review.
 
 ## EffectiveCuttingValues
 
@@ -90,6 +90,13 @@ The decoded source geometry and what the user confirmed about it.
 | `degenerateTriangleCount` | integer | All degenerate is a rejection (FR-003) |
 | `features` | derived | Smallest feature relative to the selected cutter (FR-041) |
 
+**Feature-size rule (FR-041)**: `CNCGeometry` owns `effectiveRadius(cutter, stepover)` for the
+finishing pass: flat = `cuttingDiameter / 2`; ball nose = `sqrt(2Rs - s²)` with
+`R = ballDiameter / 2` and `s = min(stepover, R)`; V-bit =
+`tipDiameter / 2 + s * tan(includedAngle / 2)`. Generation is blocked when the smallest
+concave inscribed radius is below that value; the report states both radii in millimetres.
+This is a conservative preflight proxy, not a volumetric offset of the mesh.
+
 ## Mesh and Triangle (internal geometry)
 
 Vertices in model space, converted once through the explicit transform to machine space (FR-012). The mesh carries an index of triangles for BVH construction. No entity here is persisted.
@@ -114,7 +121,7 @@ One stored mill cutter. `type` is a closed enumeration and owns the dimensions t
 | `id` | stable identifier | Assigned once, never reused (FR-042) |
 | `name` | string | Non-empty |
 | `type` | `flat` \| `ballNose` \| `vBit` | Closed set (FR-044) |
-| `shankDiameter` | number | Greater than zero, at least the cutting diameter (FR-045) |
+| `shankDiameter` | number | Greater than zero and at least the type's `maxCuttingExtent` (FR-045, FR-048) |
 | `cuttingLength` | number | Greater than zero; bounds the maximum depth per pass (FR-033) |
 | `fluteCount` | integer | At least 1 and at most 8 (FR-048) |
 | `feedRate` | number | Greater than zero and at most 800 (FR-048); a starting value, not the emitted one |
@@ -126,10 +133,12 @@ One stored mill cutter. `type` is a closed enumeration and owns the dimensions t
 
 Type-specific rules (FR-046, FR-048):
 
+- `maxCuttingExtent` is `cuttingDiameter` (flat), `ballDiameter` (ball nose), or
+  `tipDiameter + 2 * cuttingLength * tan(includedAngle / 2)` (V-bit). `shankDiameter` MUST be
+  at least this value; `tipDiameter <= shankDiameter` alone is insufficient for a V-bit.
 - A record may not carry another type's dimension as a substitute; the decoder rejects unknown fields for the declared type.
-- A tip wider than the shank is rejected at entry.
 - An included angle that cannot form a cone is rejected at entry.
-- Every rejection happens at entry, never at generation time (FR-048).
+- Every entry rejection happens at entry, never at generation time (FR-048).
 - A missing required attribute blocks generation with a message naming the attribute; no default is substituted (FR-049).
 
 **Cutter lifecycle**: `draft` (being edited, not persisted) → `valid` (passes entry validation) → `stored` (written to the library) → `deleted`. A cutter never transitions from `draft` to `stored` without passing validation.
@@ -169,9 +178,14 @@ The confirmed choices binding a model, stock, material, and cutter to one job.
 | `effective` | EffectiveCuttingValues | Resolved and confirmed (FR-079) |
 | `stepover` | number | Greater than zero and below the cutter's cutting diameter (FR-035) |
 | `maxDepthPerPass` | number | Greater than zero and at most the cutter's cutting length (FR-033) |
+| `cutterReach` | boolean | `cuttingLength >= stock.height`; otherwise generation is blocked with the required length named (spec edge case, FR-033, FR-049) |
 | `finishingAllowance` | number | At least zero and less than the stock height (FR-034) |
 | `rapidRateConfirmed` | boolean | False blocks generation until the operator confirms the controller settings (FR-024) |
 | `confirmed` | boolean | Suggested values are prefilled but not applied until confirmed (FR-037) |
+
+`cutterReach` is a generation preflight, not an entry rule, because the stock is unknown when
+the cutter is saved. It preserves the spec's "cutting length shorter than the stock depth"
+edge case while FR-033 continues to bound each individual pass.
 
 ## Toolpath
 
@@ -192,11 +206,12 @@ Every move carries `from`, `to`, and `mode`. Toolpath shape is a pure function o
 | `header` | GenerationRecord | Fixed field order; the only variable field is the generation timestamp |
 | `lines` | ordered lines | Start block, body, stop block; each at most 80 characters |
 | `validation` | ValidationReport | Must contain no error-severity finding before writing (FR-026) |
-| `text` | rendered output | UTF-8, `\n` endings, invariant number formatting |
+| `text` | rendered output | 7-bit ASCII (a UTF-8 subset), `\n` endings, invariant number formatting |
+| `fileName` | ASCII string | Derived from the model basename under `contracts/gcode-output.md`; always ends in `.nc` |
 
 ## GenerationRecord (file header)
 
-Cutter identifier, cutter name, cutter type, every attribute value actually used, the material name, both material bands, the confirmed effective feed and spindle, the rapid-rate basis (controller settings, not a program word), profile ID and version, job settings, declared units, origin, any confirmed scale, model file name, and one ISO-8601 UTC generation timestamp (FR-029, FR-081).
+Cutter identifier, cutter name, cutter type, every attribute value actually used, the material name, both material bands, the confirmed effective feed and spindle, the rapid-rate basis (controller settings, not a program word), profile ID and version, job settings, declared units, origin, any confirmed scale, model file name, and one ISO-8601 UTC generation timestamp (FR-029, FR-081). All string fields are sanitized to 7-bit ASCII before formatting.
 
 ## ValidationReport
 
@@ -219,7 +234,7 @@ Checked: dialect conformance, envelope containment, feed ceiling, spindle range,
 | `violations` | array | Envelope and limit findings surfaced before writing (FR-064) |
 | `cancelled` | boolean | Cancellation is distinct from failure (FR-066) |
 
-Rapids never modify the heightmap (FR-063). The result is computed from the validated program, not from the emitter's toolpath object (FR-065).
+Rapids never modify the heightmap (FR-063). The result is computed from the validated program, not from the emitter's toolpath object (FR-065). SC-012's 95% threshold is measured over the five committed reference fixtures, so all five must render within five seconds and each timing is recorded.
 
 ## Relationships
 
@@ -240,8 +255,9 @@ empty
                              unconfirmed rapid-rate setup; returns to configured on fix)
   -> validated              (program parses and conforms)
   -> simulated              (preview available)
-  -> written                (file atomically on disk)
+  -> ready                  (run returned; preview shown; no file written)
+  -> committed              (explicit commit wrote one .nc file atomically)
   -> cancelled              (from any long step; no file)
 ```
 
-`blocked` is reachable from `configured`, `validated`, and `simulated`, because a cutter or material edit, an emptied intersection, or an envelope breach discovered late must prevent writing. `written` is terminal for a job; regenerating creates a new job state from `configured`.
+`blocked` is reachable from `configured`, `validated`, and `simulated`, because a cutter or material edit, an emptied intersection, or an envelope breach discovered late must prevent writing. `ready` writes nothing; `committed` is reached only through `PipelineRunning.commit` with a `WriteConfirmation` produced after the preview was shown and findings were acknowledged. `committed` is terminal for a job; regenerating creates a new job state from `configured`.

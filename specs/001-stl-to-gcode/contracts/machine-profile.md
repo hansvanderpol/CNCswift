@@ -44,17 +44,17 @@ The profile is data. No package may hardcode a dialect token, limit, or block li
   ],
   "supportedCommands": {
     "motion": ["G0", "G1", "G2", "G3"],
-    "feedMode": ["G93", "G94"],
+    "feedMode": ["G94"],
     "units": ["G20", "G21"],
     "distance": ["G90", "G91"],
     "plane": ["G17", "G18", "G19"],
-    "spindle": ["M3", "M4", "M5"],
+    "spindle": ["M3", "M5"],
     "program": ["M0", "M1", "M2", "M30"],
     "other": ["G4", "G10", "G28", "G30", "G38.2", "G38.3", "G38.4", "G38.5",
-              "G40", "G43.1", "G49", "G53", "G54", "G55", "G56", "G57", "G58",
+              "G40", "G53", "G54", "G55", "G56", "G57", "G58",
               "G59", "G61", "G80", "G91.1", "G92", "G92.1"]
   },
-  "unsupportedCommands": ["G43", "M6", "M7"]
+  "unsupportedCommands": ["G43", "G43.1", "G49", "G93", "M4", "M6", "M7", "$32"]
 }
 ```
 
@@ -72,10 +72,13 @@ The profile is data. No package may hardcode a dialect token, limit, or block li
 | `outputExtension` | `nc` | Principle VI |
 | `clearanceZ` | 10.0 | Start block |
 | `returnZ` | 15.0 | Stop block |
-| `startBlock` | `G21`, `G90`, `G94`, `G00 Z10.0`, `M3 S…` | Principle VI |
+| `startBlock` | `G21`, `G90`, `G94`, `G00 Z10.0`, `M3 S{spindleSpeed}` | Principle VI |
 | `stopBlock` | `G90`, `G00 Z15.0`, `M5`, `G00 X0 Y0`, `M30` | Principle VI |
 
-`unsupportedCommands` includes `G43` and `M6` explicitly: GRBL 1.1 has no `G43` tool-length-offset-from-table and no `M6` tool change. `M7` is compile-time disabled in stock GRBL and must not be emitted.
+`unsupportedCommands` includes `G43`, `G43.1`, and `G49` (tool-length offsets and their
+cancellation), `M6` (tool change), `G93` (inverse-time feed, which would invalidate the
+`F <= maxFeedRate` rule), `M4` and `$32` (laser/dynamic-power tokens), and `M7` (compile-time
+disabled in stock GRBL). `M4` must never appear as a supported spindle command.
 
 ## Controller setup is not program content
 
@@ -100,8 +103,9 @@ The profile is data. No package may hardcode a dialect token, limit, or block li
 
 - Every command word in the emitted program must appear in `supportedCommands`; any word in `unsupportedCommands` fails even if a profile were edited to list it in both sets.
 - Coordinates must lie within `envelope` on all three axes, boundary inclusive.
-- `F` words must be at most `maxFeedRate`.
+- Feed mode MUST remain `G94`; `G93` inverse-time feed is unsupported, so every `F` word is
+  millimetres per minute and must be at most `maxFeedRate`.
 - A rapid line (`G0`/`G00`) must not carry an `F` word or an `S` word; there is no rapid rate to validate in the file (FR-024).
 - Every `S` word must be within `[spindleMin, spindleMax]`.
 - The program must begin with `startBlock` in order and end with `stopBlock` in order, with `M30` as the final line.
-- No line may contain a `$` setting command or a laser-mode token.
+- No line may contain a `$` setting command or a laser-mode token; `M4` and `$32` are rejected explicitly (FR-031).

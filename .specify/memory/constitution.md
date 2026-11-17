@@ -1,87 +1,21 @@
 <!--
 Sync Impact Report
 ==================
-Version change: 2.5.0 -> 4.0.0 (sixteen MINOR amendments, two PATCHes, and two MAJOR, all
-still uncommitted)
+Version change: 4.2.0 -> 4.3.0 (one MINOR amendment, uncommitted)
 
 Amendments:
-- 2.6.0 MINOR: output dialect fixed to standard G-code (ISO 6983 / RS-274); output file
-  extension fixed to .nc.
-- 2.7.0 MINOR: spindle narrowed to on/off only. Withdrawn before commit.
-- 2.8.0 MINOR: spindle speed control restored to the published TTC450 PRO specification:
-  variable 8,000-30,000 RPM, set with an S word and validated against the profile range.
-- 2.9.0 MINOR: dialect narrowed from ISO 6983 / RS-274 to GRBL 1.1, the dialect the TTC450
-  PRO controller runs; commands GRBL does not implement MUST NOT be emitted.
-- 2.9.1 PATCH: spindle range confirmed as the 8,000-30,000 RPM spindle supplied with the
-  TTC450 PRO; the per-installed-module hedge is removed.
-- 2.10.0 MINOR: maximum feed rate fixed at 800 mm/min; feeds above the maximum MUST be
-  rejected, never clamped.
-- 2.11.0 MINOR: spindle top speed corrected to 8,000 RPM for the supplied spindle; the
-  published 8,000-30,000 RPM range does not apply to this machine. Minimum commandable speed
-  is deferred to the machine profile.
-- 2.12.0 MINOR: work envelope fixed at 460 x 460 x 80 mm; the envelope is removed from the
-  remaining profile TODOs.
-- 2.13.0 MINOR: minimum spindle speed fixed at 5,000 RPM; the supported range is
-  5,000-8,000 RPM. Speeds below 5,000 RPM give poor cutting results and MUST be rejected.
-- 2.14.0 MINOR: maximum rapid-travel rate fixed at 800 mm/min, matching the feed ceiling;
-  rapids above the limit MUST be rejected, never clamped or downgraded to a cutting feed.
-- 2.15.0 MINOR: mandatory start block fixed: G21, G90, G94, G00 Z10.0, M3 S8000, in that
-  order, before any cutting move. The start sequence is removed from the profile TODOs; the
-  stop block remains TODO(MACHINE_PROFILE).
-- 2.15.1 PATCH: the 5,000-8,000 RPM spindle range is stated as inclusive of both endpoints.
-  No new limit; the v2.13.0 range is confirmed unchanged.
-- 2.16.0 MINOR: controller firmware and firmware version are removed from the machine
-  profile. The profile is defined by the GRBL 1.1 dialect and the machine's mechanical and
-  spindle limits; the app MUST NOT detect, query, or depend on a firmware version. The
-  firmware/version TODO is withdrawn.
-- 2.17.0 MINOR: mandatory stop block fixed: G90, G00 Z15.0, M5, G00 X0 Y0, M30, in that
-  order, after the last cutting move. The stop block is removed from the profile TODOs.
-- 2.18.0 MINOR: controller spindle limits recorded. `$30` is the maximum spindle speed and
-  `$31` the minimum; the profile requires `$30 = 8000` and `$31 = 5000`, set as machine
-  setup. The app MUST NOT read or change controller settings. TODO(MACHINE_PROFILE) is
-  resolved and withdrawn.
-- 2.19.0 MINOR: bundle identifier fixed at `com.hansvanderpol.CNCswift` and locked against
-  change without an amendment. Signing team and notarization stay TODO(SIGNING_IDENTITY).
-- 2.20.0 MINOR: scope fixed as local build and run. The app is not prepared for the App
-  Store or any other distribution channel; no App Store submission, Developer ID signing, or
-  notarization. Local builds use Xcode's default local signing. TODO(SIGNING_IDENTITY) is
-  resolved and withdrawn.
-- 3.0.0 MAJOR: Principle VI renamed from "Image and STL to Machine-Ready G-code" to "STL to
-  Machine-Ready G-code". Raster image input is removed from the G-code creation mode, which
-  now accepts STL meshes only. Image input is out of scope until an amendment restores it.
-- 3.1.0 MINOR: cutter library scope fixed to cutter attributes only. Wear and life
-  tracking, tool-change sheets, machine offsets, and job or machine management features are
-  out of scope. TODO(TOOL_ADMIN_SCOPE) is resolved and withdrawn.
-- 4.0.0 MAJOR: Principle VII redefined from "Two Modes over One Cutter Library" to "G-code
-  Main Screen and Cutter Library Modal". The cutter administration mode is removed. G-code
-  creation is the only user-facing mode, presented on a main screen with cutter selection,
-  carving material with dimensions, and G-code simulation panels; cutter-library maintenance
-  is a separate modal view. The cutter library remains a separate package.
+- 4.3.0 MINOR: the Distribution clause now permits ad-hoc local signing for SPM/CLT builds
+  (`/usr/bin/codesign --sign -`) while retaining Xcode's default local signing for Xcode
+  builds. App Store submission, Developer ID signing, notarization, and distributable signed
+  artifacts remain out of scope. Resolves CRITICAL C1 from /speckit.analyze.
 
-Modified principles:
-- I. Swift 6 Language Mode and Strict Concurrency - unchanged
-- II. Modular Package-First Architecture - unchanged
-- III. Test-First - unchanged
-- IV. Native macOS Fidelity and Accessibility - unchanged
-- V. Observability, Diagnostics, and Error Discipline - unchanged
-- VI. Image and STL to Machine-Ready G-code -> STL to Machine-Ready G-code: image input
-  removed, image-specific validation and coordinate language removed, STL-only rule added;
-  fixed start and stop blocks, 800 mm/min rapid-travel ceiling, 5,000-8,000 RPM spindle
-  range, 460 x 460 x 80 mm envelope, 800 mm/min feed ceiling, GRBL 1.1 dialect, and .nc
-  output retained
-- VII. Two Modes over One Cutter Library -> G-code Main Screen and Cutter Library Modal: the
-  cutter administration mode is removed; G-code creation is the only user-facing mode; the
-  main screen carries cutter selection, carving material with dimensions, and G-code
-  simulation panels; cutter-library maintenance is a separate modal view; the cutter library
-  scope stays limited to cutter attributes (wear and life tracking, tool-change sheets,
-  machine offsets, and job or machine management remain out of scope)
+Modified principles: none (Technology Stack and Toolchain - Distribution changed; no Core
+Principle changed)
 
 Added sections: none
 Removed sections: none
 
-Open TODOs: none. The machine profile, distribution scope, and cutter library scope have no
-unresolved facts.
-
+Open TODOs: none.
 Follow-up TODOs: none.
 -->
 
@@ -241,9 +175,24 @@ adding it requires an amendment.
 - Emitted feed rates MUST NOT exceed the machine profile's maximum feed rate, which is
   800 mm/min for the TTC450 PRO. A feed rate above the maximum MUST be rejected, never
   clamped.
-- Emitted rapid moves MUST NOT exceed the machine profile's maximum rapid-travel rate, which
-  is also 800 mm/min for the TTC450 PRO. A rapid above that limit MUST be rejected, never
-  clamped or silently downgraded to a cutting feed.
+- Cutting speed is material-dependent, for both feed and spindle. A job's effective feed and
+  spindle speed MUST be resolved from the selected carving material's recommended bands
+  intersected with the machine profile's limits, prefilled from the cutter's recorded value
+  when it lies inside the intersection, and explicitly confirmed by the user before
+  generation. The material, its recommended bands, and the effective values actually used
+  MUST be recorded in the generated file header. A material whose bands have no value in
+  common with the profile limits MUST be rejected; no value outside the intersection MAY be
+  applied or silently clamped into range. The 800 mm/min feed ceiling and the 5,000-8,000 RPM
+  spindle range still bound every value.
+- The maximum rapid-travel rate for the TTC450 PRO is 800 mm/min. GRBL 1.1 ignores any `F`
+  word on a `G0` line, so a rapid's rate cannot be expressed in, or checked from, program
+  text. The ceiling is therefore met as machine setup in the same way as the `$30`/`$31`
+  spindle limits: the profile declares the required controller rapid settings (`$110`,
+  `$111`, `$112` = 800 mm/min), the app documents them and MUST block generation until the
+  operator confirms they are applied, and emitted rapids MUST carry no feed word. The app
+  MUST NOT read or change controller settings. A program carrying a feed word on a rapid
+  MUST be rejected; an over-limit rapid MUST never be emitted, clamped, or downgraded to a
+  cutting feed.
 - Emitted G-code MUST be validated before it is written: it MUST parse as GRBL 1.1, stay
   inside the profile's 460 x 460 x 80 mm envelope and declared limits, and carry the fixed
   start and stop blocks verbatim in their declared order. Geometry the profile cannot
@@ -313,9 +262,15 @@ reproducible from a file already cut.
   iPadOS, tvOS, watchOS, visionOS, Mac Catalyst, Linux, or Windows MUST NOT be added,
   cross-platform UI toolkits MUST NOT be introduced, and no other-platform requirement MAY
   shape the design. Raising the deployment target requires an amendment.
-- Build: Swift Package Manager for every module. The Xcode project MUST consume the
-  packages and MUST NOT duplicate their sources.
-- Toolchain: current stable Xcode, pinned in CI and documented in `AGENTS.md` once CI exists.
+- Build: Swift Package Manager (SPM) is the authoritative build and test system for every
+  module. `swift build` and `swift test` from the repository root are the single source of
+  truth for local development and CI. An Xcode project, when one exists, MUST consume the
+  packages and MUST NOT duplicate their sources; no checked-in project is required for local
+  build and run.
+- Toolchain: the current stable Swift toolchain, pinned in CI and documented in `AGENTS.md`
+  once CI exists. Xcode is preferred; where Xcode is unavailable, Apple's Command Line Tools
+  providing the same Swift toolchain and SDK are an accepted local-build toolchain, with the
+  deviation recorded in the feature plan.
 - Formatting: `swift-format` configured at the repository root, applied to all Swift
   sources, enforced in CI. First-party targets MUST treat warnings as errors.
 - Dependencies: Apple frameworks first. Every third-party package MUST be justified,
@@ -331,8 +286,14 @@ reproducible from a file already cut.
   `$30` as the maximum spindle speed and `$31` as the minimum, so the profile requires
   `$30 = 8000` and `$31 = 5000`; setting them is machine setup, not app behaviour, and the
   app MUST NOT read or change controller settings. The maximum feed rate is 800 mm/min and
-  the maximum rapid-travel rate is also 800 mm/min, so every emitted move is capped at that
-  rate. Every program opens with the fixed start block under Principle VI: `G21`, `G90`,
+  the maximum rapid-travel rate is also 800 mm/min. Cutting speed is material-dependent:
+  effective feed and spindle values come from the material's recommended bands intersected
+  with the profile limits, are confirmed per job, and are recorded in the file header; no
+  value is clamped. Because GRBL 1.1 ignores any `F` word on a `G0` line, the rapid ceiling is
+  a controller-setting requirement: the profile requires `$110`, `$111`, `$112` = 800
+  mm/min, the app documents and records operator confirmation of those settings, generation
+  is blocked until that confirmation exists, and emitted rapids carry no feed word. Every
+  program opens with the fixed start block under Principle VI: `G21`, `G90`,
   `G94`, `G00 Z10.0`, and `M3` with an `S` word. Every program closes with the fixed stop
   block under Principle VI: `G90`, `G00 Z15.0`, `M5`, `G00 X0 Y0`, and `M30`. Controller
   firmware and firmware version are explicitly out of scope for the implementation: the
@@ -341,10 +302,12 @@ reproducible from a file already cut.
   firmware version. Tool activation is spindle-only; laser output is out of scope.
 - Distribution: the app is built and run locally on the developer's Mac. It is not prepared
   for the App Store or any other distribution channel: no App Store submission, no Developer
-  ID signing, and no notarization. Local development builds use Xcode's default local signing
-  only, and producing a distributable signed or notarized artifact requires an amendment. The
-  bundle identifier is `com.hansvanderpol.CNCswift` and MUST NOT change without an
-  amendment.
+  ID signing, and no notarization. Local SPM and Command Line Tools builds producing an app
+  bundle MUST use ad-hoc local signing (`/usr/bin/codesign --sign -`); Xcode builds, when an
+  Xcode project is used, MUST use Xcode's default local signing. These signing identities are
+  valid only for local execution and MUST NOT be used for distribution. Producing a
+  distributable signed or notarized artifact requires an amendment. The bundle identifier is
+  `com.hansvanderpol.CNCswift` and MUST NOT change without an amendment.
 
 ## Development Workflow and Quality Gates
 
@@ -380,4 +343,4 @@ reproducible from a file already cut.
   `@unchecked Sendable` all require explicit rationale.
 - `AGENTS.md` holds runtime guidance; this file governs intent, not command syntax.
 
-**Version**: 4.0.0 | **Ratified**: 2026-11-12 | **Last Amended**: 2026-11-15
+**Version**: 4.3.0 | **Ratified**: 2026-11-12 | **Last Amended**: 2026-11-17

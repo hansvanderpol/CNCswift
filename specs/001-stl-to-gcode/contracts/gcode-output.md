@@ -8,15 +8,30 @@ This contract is the product. A file that violates it is a broken build, not a f
 
 | Rule | Value | Reference |
 |---|---|---|
-| Encoding | UTF-8, ASCII-only content | FR-018 |
+| Encoding | 7-bit ASCII only (bytes 0x00-0x7F), a UTF-8 subset | FR-018 |
 | Line ending | `\n` only | research D8 |
-| Extension | `.nc`, exactly one file per generation | FR-018 |
-| Maximum line length | 80 characters | research D8, GRBL `error:11` |
+| Extension | `.nc`, exactly one file per committed job | FR-018 |
+| Filename | Deterministic 7-bit ASCII name derived from the model basename | FR-018, FR-028 |
+| Maximum line length | 80 characters | FR-082, GRBL `error:11` |
 | Trailing newline | Required after `M30` | FR-021 |
 | Determinism | Byte-identical for identical inputs; only the header timestamp may differ | FR-028 |
 | Atomicity | Written to a temporary sibling then moved into place; no partial file is ever visible | FR-027 |
+| Write trigger | Explicit `PipelineRunning.commit` after preview; `run` writes nothing | spec clarification Q6 |
 
-The 80-character limit is a derived constraint, not a spec sentence: GRBL's line buffer is `LINE_BUFFER_SIZE` bytes and an over-long line aborts mid-program. It is enforced by the formatter and re-checked by the validator. A future spec revision should give it a requirement number so it is traceable without reading research.
+The 80-character limit originates in GRBL's line buffer (`LINE_BUFFER_SIZE` bytes; an over-long line aborts mid-program) and is specified as FR-082. It is enforced by the formatter and re-checked by the validator.
+
+## Output filename
+
+The name is derived from the model file's last path component, never from unsanitized user text:
+
+1. Drop the final extension.
+2. Map every character outside `[A-Za-z0-9._-]` to `_`.
+3. Collapse runs of `_` to one `_`.
+4. Append `.nc`.
+5. If the result would be empty, use `carve.nc`.
+
+The same rule is used for the `; model:` header value before the 80-character check. No emitted
+byte, including the filename, may fall outside 7-bit ASCII.
 
 ## Header
 
@@ -28,7 +43,7 @@ The 80-character limit is a derived constraint, not a spec sentence: GRBL's line
 ; dialect: grbl1_1
 ; units: mm  origin: stock front-left top
 ; model: relief-demo.stl
-; cutter: 8f3c1d2a-...
+; cutter: 8f3c1d2a-0b7e-4c55-9a1f-2d6e7c8b9a10
 ; cutter-name: 6mm flat
 ; cutter-type: flat
 ; cutting-diameter: 6.000
@@ -61,7 +76,7 @@ Rules:
 - `rapid-rate` states that the ceiling is a controller setting, so nobody reads the file and concludes the program enforces it (FR-024).
 - `scale` records the multiplier actually applied after explicit confirmation (FR-006).
 - Values are formatted with three decimals except integers (`flutes`, `spindle`, band ranges, `$` references) and the profile version.
-- No header line may exceed 80 characters. A long material name is truncated with an ellipsis in the header only; the full name stays in the UI and the material library.
+- No header line may exceed 80 characters. Header string values are sanitized to 7-bit ASCII (`;` and newline characters map to `_`). If a value still exceeds 77 characters, truncate it to 77 and append the three ASCII characters `...`; the full name stays in the UI and the material library. The non-ASCII ellipsis character is forbidden.
 
 ## Program body order
 
@@ -137,3 +152,4 @@ Any error-severity finding blocks the write (FR-026).
 - Any line above 80 characters (research D8).
 - Any cutting feed above 800 mm/min and any spindle speed outside 5,000-8,000 RPM, whether clamped or not (FR-022, FR-023).
 - An `F` word on a rapid, or any claim in the file that the program controls the rapid rate (FR-024).
+- Any byte outside 7-bit ASCII in content or filename, including U+2026 (FR-018, FR-082).

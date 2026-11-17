@@ -6,7 +6,7 @@ All decisions below were checked against the constitution, and the toolchain cla
 
 ## D1. Build: SPM workspace plus a bundle script, no Xcode project
 
-**Decision**: The workspace is a root `Package.swift` aggregating one package per module under `Packages/`, plus an executable target `CNCswiftApp`. `Scripts/make-app.sh` assembles `CNCswift.app` from the built executable, an `Info.plist`, and an entitlements file, then ad-hoc signs it with `/usr/bin/codesign`.
+**Decision**: The workspace is a root `Package.swift` aggregating one package per module under `Packages/`, plus an executable target `CNCswiftApp`. `Scripts/make-app.sh` assembles `CNCswift.app` from the built executable, an `Info.plist`, and an entitlements file, then ad-hoc signs it with `/usr/bin/codesign --sign -`. Under constitution v4.3.0 this is the mandated local signing path for SPM/Command Line Tools bundles; an Xcode build, when one is used, uses Xcode's default local signing. No distributable, App Store, Developer ID, or notarized artifact is produced.
 
 **Rationale**: Verified: `xcodebuild` is unavailable because the active developer directory is `/Library/Developer/CommandLineTools`, and no Xcode is installed. A checked-in `.xcodeproj` could be written but never opened, built, or verified here, which would violate the rule against unverifiable output. `swift build` and `swift test` from the repository root cover every module, and `Package.swift` opens as a project wherever Xcode exists later, with no duplicated sources.
 
@@ -118,13 +118,13 @@ Provisional preset bands, all inside the 800 mm/min and 5,000-8,000 RPM limits:
 
 **Alternatives considered**: Material owning final values (unsafe: a 3 mm and a 6 mm cutter would get identical rates); storing bands on the cutter (the previous spec: the same cutter record would need duplicating per material); letting the planner clamp into range (violates the no-clamping rule in FR-078 and FR-080).
 
-**Open item**: the band numbers above need review by someone with cutting experience on this machine before the preset fixture is committed. They are provisional, and the plan does not treat them as verified.
+**Review gate (not a design unknown)**: the band numbers above are provisional engineering guidance. `Fixtures/materials/README.md` MUST record cutting-experience sign-off before the preset fixture is treated as production data (task T111). Until then the fixture is marked provisional; per-job user confirmation remains mandatory and generation is not blocked by the pending review.
 
 ## D12. Rapid rate: controller settings, not program text
 
 **Decision**: The profile declares `rapidRateSetup` — the controller settings `$110 = 800`, `$111 = 800`, `$112 = 800` — plus `maxRapidRate: 800` as the value those settings must produce. The emitter never writes an `F` word on a `G0` line. The main screen requires the operator to confirm the settings once per session before generation is enabled, and the header records that the rapid rate is controller-set. Validation rejects any feed word appearing on a rapid line.
 
-**Rationale**: Verified against GRBL 1.1 behaviour: `G0` ignores `F`, so a rapid's rate is decided entirely by `$110`–`$112`. Writing `F800` on a rapid would be a lie the controller ignores, and writing every traverse as `G1` would slow the job and still leave the mandated `G00 Z10.0` lines outside the guarantee. The constitution already treats `$30`/`$31` as machine setup rather than app behaviour, so this follows established precedent. It is recorded in the plan as an interpreted gate with a recommended PATCH amendment.
+**Rationale**: Verified against GRBL 1.1 behaviour: `G0` ignores `F`, so a rapid's rate is decided entirely by `$110`–`$112`. Writing `F800` on a rapid would be a lie the controller ignores, and writing every traverse as `G1` would slow the job and still leave the mandated `G00 Z10.0` lines outside the guarantee. The constitution already treats `$30`/`$31` as machine setup rather than app behaviour, so this follows established precedent. Constitution v4.1.0 ratifies it as a controller-setting requirement, retained through v4.3.0; the plan records it as such.
 
 **Alternatives considered**: Emitting every traverse as `G1` at 800 mm/min (honest in the file, but slower, longer, and inconsistent with the fixed start and stop blocks that use `G00`); keeping the rejection rule as written (unenforceable: there is no rate on a `G0` line to reject); silently ignoring the ceiling (violates the intent outright).
 
@@ -155,13 +155,14 @@ These are the commands the implementation must document in `AGENTS.md`; each was
 | Format lint | `swift format lint --recursive Packages App` | binary present; flags to confirm at implementation |
 | Format write | `swift format --in-place --recursive Packages App` | binary present; flags to confirm at implementation |
 | Bundle app | `Scripts/make-app.sh` | pending implementation |
+| Ad-hoc sign + sandbox check | `codesign -dvv .build/CNCswift.app` and `codesign -d --entitlements :- .build/CNCswift.app` | pending implementation |
 | Run | `open .build/CNCswift.app` | pending implementation |
 
 ## Open items carried into implementation
 
 - Swift Testing's plugin path must be resolved dynamically in `Scripts/ci.sh` rather than hardcoded to a Command Line Tools path, so it still works if Xcode is installed later.
 - `swift format` subcommand flags need confirmation against the actual configuration file at implementation time.
-- Whether ad-hoc signing (`codesign --sign -`) is sufficient to launch a sandboxed app bundle locally must be confirmed on first bundle build; if not, the fallback is to drop the sandbox entitlement for local runs and record the deviation, since Principle IV requires a sandboxed app and this must be reported rather than silently skipped.
+- Ad-hoc signing (`/usr/bin/codesign --sign -`) is mandated for SPM/CLT app bundles by constitution v4.3.0. The first bundle build MUST verify that the ad-hoc signature is valid and that the sandbox entitlement is present and effective. A launch failure MUST be diagnosed and fixed inside an ad-hoc-signed, sandboxed bundle; dropping the sandbox entitlement is prohibited by Principle IV, and an unresolvable failure blocks the build and is reported as a finding rather than waived.
 - The provisional material band table in D11 needs a review sign-off before the preset fixture is treated as production data.
-- FR-026 does not name the 80-character ceiling explicitly; the limit is derived from GRBL's `LINE_BUFFER_SIZE` and enforced as a contract. A future spec edit should add a dedicated requirement so the constraint is traceable without reading research.
-- The rapid-rate interpretation in D12 should become a PATCH amendment to Principle VI and the Technology Stack section.
+- The 80-character ceiling is derived from GRBL's `LINE_BUFFER_SIZE` and is now traceable as FR-082; it is enforced by the formatter and re-checked by the validator.
+- The rapid-rate rule in D12 is ratified in constitution v4.1.0 and retained through v4.3.0 as a controller-setting requirement; the plan records it as such.

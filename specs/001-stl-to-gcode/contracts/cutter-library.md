@@ -66,7 +66,7 @@ Rejected at entry, never at generation time (FR-048):
 |---|---|
 | Positive dimensions | `shankDiameter`, `cuttingLength`, and the type dimension are all greater than zero |
 | Flute count | Integer, at least 1, at most 8 |
-| Shank dominance | `shankDiameter` at least the type's maximum cutting extent |
+| Shank dominance | `shankDiameter >= maxCuttingExtent`, where `maxCuttingExtent` is `cuttingDiameter` (flat), `ballDiameter` (ball nose), or `tipDiameter + 2 * cuttingLength * tan(includedAngle / 2)` (V-bit); `tipDiameter <= shankDiameter` alone is insufficient |
 | Cone validity | For `vBit`, `0 < includedAngle < 180` |
 | Tip width | For `vBit`, `tipDiameter >= 0` and `tipDiameter <= shankDiameter` |
 | Feed ceiling | `0 < feedRate <= 800` |
@@ -75,6 +75,13 @@ Rejected at entry, never at generation time (FR-048):
 | Name | Non-empty after trimming |
 
 A failed rule yields a typed error naming the field and the limit; nothing is persisted (FR-048).
+
+## Generation preflight (FR-033, FR-049)
+
+Before generation, `CNCToolpath` blocks when `stock.height > cutter.cuttingLength` and reports
+the required cutting length. This is a generation rule, not an entry rule, because the stock is
+unknown when the cutter is saved. FR-033 still bounds each individual roughing layer and
+finishing pass by `maxDepthPerPass`.
 
 ## Migration contract
 

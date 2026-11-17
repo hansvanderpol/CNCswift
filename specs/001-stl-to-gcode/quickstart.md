@@ -12,6 +12,7 @@ A validation and run guide. It states what to run and what must be true; it does
 | Architecture | arm64 | Verified |
 | Swift toolchain | 6.4 or later | Verified: 6.4.2 |
 | Xcode | **not required** | `xcodebuild` is unavailable on this machine; the build is SPM-only (research D1) |
+| Local signing | SPM/CLT: ad-hoc `/usr/bin/codesign --sign -`; Xcode: default local signing | Required by constitution v4.3.0; no App Store, Developer ID, or notarized artifact |
 | Third-party tools | none | `swift format` and `codesign` ship with the Command Line Tools |
 | Controller settings | `$110`, `$111`, `$112` = 800; `$30` = 8000, `$31` = 5000 | Machine setup, applied once outside the app (research D12) |
 
@@ -47,10 +48,15 @@ Expected: no findings. This gate is part of the definition of done (constitution
 
 ```bash
 Scripts/make-app.sh
+codesign -dvv .build/CNCswift.app
+codesign -d --entitlements :- .build/CNCswift.app
 open .build/CNCswift.app
 ```
 
-Expected: the app launches with a main screen carrying three panels and a Cutter Library command that opens the modal.
+Expected: the bundle carries a valid ad-hoc signature (`Signature=adhoc`), the sandbox
+entitlement is present with only the required file access, and the app launches in that
+sandbox. An Xcode build uses Xcode's default local signing; no distributable or notarized
+artifact is produced. A launch failure is fixed without dropping the sandbox entitlement.
 
 ## End-to-end validation scenarios
 
@@ -66,11 +72,11 @@ Each scenario proves a success criterion from the spec. All are runnable without
 6. Observe the feed prefills at 600 mm/min (the band's upper bound, because the cutter's 750 lies outside 400-600) and the spindle prefills at 8,000 RPM.
 7. Confirm both values and confirm the rapid-rate controller settings.
 8. Confirm stepover, maximum depth per pass, and finishing allowance.
-9. Generate and save.
+9. Generate (no file is written), inspect the 3D preview, acknowledge any findings, then explicitly commit/save.
 
 Expected:
 
-- Exactly one file is written, extension `.nc`.
+- No file exists after generation alone; exactly one `.nc` file appears only after commit.
 - Its first five lines are `G21`, `G90`, `G94`, `G00 Z10.0`, `M3 S8000` in that order.
 - Its last five lines are `G90`, `G00 Z15.0`, `M5`, `G00 X0 Y0`, `M30`, and `M30` is last.
 - No line exceeds 80 characters.
@@ -100,7 +106,7 @@ Expected: zero findings. Then mutate copies and confirm an error is reported for
 
 Generate VS-1 and inspect the simulation panel before writing.
 
-Expected: the stock appears with the roughing cavity and the finished surface; rapid moves remove no material; the preview completes within 5 seconds of validation for the reference models.
+Expected: the stock appears with the roughing cavity and the finished surface; rapid moves remove no material; the preview completes within 5 seconds of validation for all five reference models (95% of the five-fixture set requires 5/5, with a recorded timing for each).
 
 ### VS-6 — Cutter edit propagates (SC-007)
 
@@ -125,6 +131,14 @@ Expected: no `.nc` file and no temporary file remain; the outcome reads as cance
 Create a user material with a feed band of 1,200-1,600 mm/min and a spindle band of 9,000-10,000 RPM, save it, then select it for a job.
 
 Expected: the material saves successfully (the record is valid), and selecting it blocks generation with a message naming the material, the band, and the 800 mm/min ceiling and 8,000 RPM top end that cannot be met. No value is trimmed into range and no file is produced.
+
+### VS-10 — Feature smaller than the cutter (FR-041)
+
+Load a fine-detail reference STL, select a cutter whose effective radius at the chosen stepover
+exceeds the model's smallest concave radius, and attempt generation.
+
+Expected: generation is blocked with a report that states both radii in millimetres; changing the
+model, cutter, or stepover is required before generation can proceed. No file is written.
 
 ## Manual controller check
 
