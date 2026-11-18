@@ -102,8 +102,8 @@ Do not silently rewrite `spec.md` while implementing. The clarified spec, `plan.
 - [X] T035 Declare the typed stage protocols and shared value types from `contracts/toolpath-api.md` in their owning packages so every story compiles against the same boundaries — `MaterialResolving`, `ToolpathPlanning`, `GCodeRendering`, `ProgramWriter`, `ProgramValidating`, `MaterialRemovalSimulating`, `PipelineRunning`, `RenderedProgram`, `ParsedProgram`, `SimulationResult`, `GenerationRequest`, `PipelineOutcome`, `WriteConfirmation` (FR-026, FR-027, D7, D10, C1, C2) — `Packages/CNCToolpath/Sources/Protocols.swift`, `Packages/CNCGCode/Sources/Protocols.swift`, `Packages/CNCValidation/Sources/Protocols.swift`, `Packages/CNCSimulation/Sources/Protocols.swift`, `Packages/CNCPipeline/Sources/Protocols.swift`
 - [X] T036 Implement cutter library load with all load outcomes, each reported with its path (FR-051, FR-053, FR-054) — `Packages/CNCCuttersStore/Sources/LibraryStore.swift`
 - [X] T037 Publish `AsyncStream<LibraryChange>` from the single store actor only after successful atomic save (FR-060, D14) — `Packages/CNCCuttersStore/Sources/Changes.swift`
-- [ ] T038 Add a current-schema cutter fixture used by store tests and as the seeded cutter for US1 (FR-051, FR-042) — `Fixtures/library/current.json`
-- [ ] T039 Add the preset-band fixture asserting exactly four shipped bands, preserved names, ordered positive bounds, and a provisional-status marker (FR-077, research D11) — `Fixtures/materials/presets.json`, `Fixtures/materials/README.md`
+- [X] T038 Add a current-schema cutter fixture used by store tests and as the seeded cutter for US1 (FR-051, FR-042) — `Fixtures/library/current.json`
+- [X] T039 Add the preset-band fixture asserting exactly four shipped bands, preserved names, ordered positive bounds, and a provisional-status marker (FR-077, research D11) — `Fixtures/materials/presets.json`, `Fixtures/materials/README.md`
 
 **Checkpoint**: Foundational tests pass; no generation pipeline or UI exists yet.
 
@@ -117,9 +117,9 @@ Do not silently rewrite `spec.md` while implementing. The clarified spec, `plan.
 
 ### Tests for User Story 1 (write first; they must fail)
 
-- [ ] T040 [P] [US1] Golden-file test for header field order, cutter and material rows, effective values, rapid-rate basis, start block, stop block, and three-decimal formatting (FR-019, FR-020, FR-021, FR-029, FR-081) — `Packages/CNCGCode/Tests/EmitterTests.swift`
-- [ ] T041 [P] [US1] Rapid-rate header test asserting `; rapid-rate: controller 800 (see $110-$112)`, no `F` on any `G0`, and no rapid rate claimed as program text (FR-024, FR-081) — `Packages/CNCGCode/Tests/RapidHeaderTests.swift`
-- [ ] T042 [P] [US1] Determinism test using two injected `Date` values: files differ only on `; generated:` (FR-028, SC-005, D8) — `Packages/CNCGCode/Tests/DeterminismTests.swift`
+- [X] T040 [P] [US1] Golden-file test for header field order, cutter and material rows, effective values, rapid-rate basis, start block, stop block, and three-decimal formatting (FR-019, FR-020, FR-021, FR-029, FR-081) — `Packages/CNCGCode/Tests/EmitterTests.swift`
+- [X] T041 [P] [US1] Rapid-rate header test asserting `; rapid-rate: controller 800 (see $110-$112)`, no `F` on any `G0`, and no rapid rate claimed as program text (FR-024, FR-081) — `Packages/CNCGCode/Tests/RapidHeaderTests.swift`
+- [X] T042 [P] [US1] Determinism test using two injected `Date` values: files differ only on `; generated:` (FR-028, SC-005, D8) — `Packages/CNCGCode/Tests/DeterminismTests.swift`
 - [ ] T043 [P] [US1] Line-length and ASCII test asserting every emitted line including header and comments is at most 80 characters, every content byte is 7-bit ASCII, U+2026 is rejected, over-long values truncate with the three ASCII characters `...`, and an over-long case throws (FR-018, FR-082, D8) — `Packages/CNCGCode/Tests/LineLengthTests.swift`
 - [ ] T044 [P] [US1] Output guard test asserting no laser token (`M4`, `$32`, `S`-as-power, dynamic-power comments), `$` setting, `G43`, `G43.1`, `G49`, `G93`, `M6`, or unsupported command can reach output (FR-017, FR-031) — `Packages/CNCGCode/Tests/OutputGuardTests.swift`
 - [ ] T045 [P] [US1] Writer tests against an injected fake file system: atomic replace, `.nc` extension only, deterministic ASCII filename (drop extension, map characters outside `[A-Za-z0-9._-]` to `_`, collapse `_` runs, append `.nc`, fall back to `carve.nc`), no partial file on failure, and no file on cancellation (FR-018, FR-027, SC-011) — `Packages/CNCGCode/Tests/FileWriterTests.swift`

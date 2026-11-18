@@ -53,6 +53,21 @@ private final class FakeFileSystem: FileSystem, @unchecked Sendable {
     }
 }
 
+private func repositoryRoot() -> URL {
+    var url = URL(fileURLWithPath: #filePath)
+    for _ in 0..<4 {
+        url = url.deletingLastPathComponent()
+    }
+    return url
+}
+
+private func libraryFixtureURL(_ name: String) -> URL {
+    repositoryRoot()
+        .appendingPathComponent("Fixtures", isDirectory: true)
+        .appendingPathComponent("library", isDirectory: true)
+        .appendingPathComponent(name)
+}
+
 private func cutter(id: String = "cutter-1", name: String = "6mm flat") -> Cutter {
     Cutter(
         id: CutterID(id),
@@ -132,6 +147,35 @@ private func store(
     #expect(backupDocument.schemaVersion == 1)
     #expect(backupDocument.payload.cutters == [original])
     #expect(currentDocument.payload.cutters == [edited])
+}
+
+@Test func currentSchemaFixtureLoadsAsTheSeededCutter() async throws {
+    let fs = FakeFileSystem()
+    let url = URL(fileURLWithPath: "/sandbox/library.json")
+    try fs.write(try Data(contentsOf: libraryFixtureURL("current.json")), to: url)
+
+    let outcome = try await store(fileSystem: fs).load(from: url)
+
+    guard case .loaded(let cutters) = outcome else {
+        Issue.record("expected loaded")
+        return
+    }
+    #expect(cutters.count == 1)
+    let seeded = try #require(cutters.first)
+    #expect(seeded.id == CutterID("8f3c1d2a-0b7e-4c55-9a1f-2d6e7c8b9a10"))
+    #expect(seeded.name == "6mm flat")
+    #expect(seeded.type == .flat)
+    #expect(seeded.shankDiameter == 6)
+    #expect(seeded.cuttingDiameter == 6)
+    #expect(seeded.cuttingLength == 20)
+    #expect(seeded.fluteCount == 2)
+    #expect(seeded.feedRate == 750)
+    #expect(seeded.spindleSpeed == 8000)
+    #expect(seeded.ballDiameter == nil)
+    #expect(seeded.includedAngle == nil)
+    #expect(seeded.tipDiameter == nil)
+    // The fixture is a valid stored record, not merely decodable (FR-042, FR-048).
+    try CutterValidator.validate(seeded)
 }
 
 @Test func olderDocumentMigratesForwardWithoutLosingTheCutter() async throws {

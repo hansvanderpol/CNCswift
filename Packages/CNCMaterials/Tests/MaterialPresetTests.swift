@@ -1,6 +1,40 @@
+import Foundation
 import Testing
 
 @testable import CNCMaterials
+
+private struct PresetFixture: Decodable {
+    struct Band: Decodable {
+        let lower: Double
+        let upper: Double
+    }
+
+    struct Preset: Decodable {
+        let id: String
+        let name: String
+        let feedBand: Band
+        let spindleBand: Band
+        let shippedVersion: String?
+    }
+
+    let status: String
+    let presets: [Preset]
+}
+
+private func repositoryRoot() -> URL {
+    var url = URL(fileURLWithPath: #filePath)
+    for _ in 0..<4 {
+        url = url.deletingLastPathComponent()
+    }
+    return url
+}
+
+private func presetFixtureURL() -> URL {
+    repositoryRoot()
+        .appendingPathComponent("Fixtures", isDirectory: true)
+        .appendingPathComponent("materials", isDirectory: true)
+        .appendingPathComponent("presets.json")
+}
 
 private func material(
     id: String = "user-1",
@@ -49,6 +83,37 @@ private func material(
     #expect(Presets.all[2].feedBand == 500...700)
     #expect(Presets.all[3].feedBand == 500...700)
     #expect(Presets.all.allSatisfy { $0.spindleBand == 7000...8000 })
+}
+
+@Test func presetFixtureMatchesTheShippedTableAndStaysProvisional() throws {
+    let fixture = try JSONDecoder().decode(
+        PresetFixture.self,
+        from: Data(contentsOf: presetFixtureURL())
+    )
+
+    // Research D11: the fixture is provisional until T111 records cutting-experience sign-off.
+    #expect(fixture.status == "provisional")
+    #expect(fixture.presets.count == 4)
+    #expect(Presets.all.count == fixture.presets.count)
+    #expect(fixture.presets.map(\.name) == Presets.all.map(\.name))
+    #expect(fixture.presets.map(\.id) == Presets.all.map(\.id))
+
+    for (row, preset) in zip(fixture.presets, Presets.all) {
+        #expect(row.feedBand.lower == preset.feedBand.lowerBound)
+        #expect(row.feedBand.upper == preset.feedBand.upperBound)
+        #expect(row.spindleBand.lower == preset.spindleBand.lowerBound)
+        #expect(row.spindleBand.upper == preset.spindleBand.upperBound)
+        #expect(row.shippedVersion == "provisional")
+        #expect(preset.shippedVersion == row.shippedVersion)
+
+        let bounds = [
+            row.feedBand.lower, row.feedBand.upper,
+            row.spindleBand.lower, row.spindleBand.upper,
+        ]
+        #expect(bounds.allSatisfy { $0 > 0 })
+        #expect(row.feedBand.lower <= row.feedBand.upper)
+        #expect(row.spindleBand.lower <= row.spindleBand.upper)
+    }
 }
 
 @Test func invalidBandsAreRejectedAtEntry() {
