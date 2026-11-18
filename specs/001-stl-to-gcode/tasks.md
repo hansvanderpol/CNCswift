@@ -251,7 +251,7 @@ Do not silently rewrite `spec.md` while implementing. The clarified spec, `plan.
 - **Foundational (Phase 2)**: depends on Setup; blocks all three stories.
 - **US1 (Phase 3)**: depends on Foundational, which now includes the cutter store and seeded cutter fixture. Does not depend on US2 or US3; T052 uses a test confirmation and T040 reads a stored cutter while building the material in memory.
 - **US2 (Phase 4)**: depends on Foundational; load/save and the change stream are already foundational, so US2 adds migration and the modal. T079 and T086 integrate with the US1 view model, so schedule them after T073.
-- **US3 (Phase 5)**: depends on Foundational; T102 and T103 integrate with the US1 pipeline, so schedule them after T067 and T068. T094 is the commit-gate test and must precede T103.
+- **US3 (Phase 5)**: depends on Foundational; T102 and T103 integrate with the US1 pipeline, so schedule them after T067 and T068. T094 is the write-gate test and must precede T103.
 - **Polish (Phase 6)**: depends on the stories being hardened; T114 and T117 are the final gates.
 
 ### User story dependencies

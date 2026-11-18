@@ -256,7 +256,7 @@ empty
   -> validated              (program parses and conforms)
   -> simulated              (preview available)
   -> ready                  (run returned; preview shown; no file written)
-  -> committed              (explicit commit wrote one .nc file atomically)
+  -> committed              (explicit wrote one .nc file atomically)
   -> cancelled              (from any long step; no file)
 ```
 
