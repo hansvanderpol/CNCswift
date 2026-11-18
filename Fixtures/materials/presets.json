@@ -1,0 +1,34 @@
+{
+  "status" : "provisional",
+  "statusNote" : "Provisional engineering guidance for a 500 W-class spindle until cutting-experience sign-off is recorded in Fixtures/materials/README.md (research D11, task T111). Per-job confirmation remains mandatory.",
+  "presets" : [
+    {
+      "id" : "preset-softwood",
+      "name" : "Softwood (pine/basswood)",
+      "feedBand" : { "lower" : 600, "upper" : 800 },
+      "spindleBand" : { "lower" : 7000, "upper" : 8000 },
+      "shippedVersion" : "provisional"
+    },
+    {
+      "id" : "preset-hardwood",
+      "name" : "Hardwood (oak/maple)",
+      "feedBand" : { "lower" : 400, "upper" : 600 },
+      "spindleBand" : { "lower" : 7000, "upper" : 8000 },
+      "shippedVersion" : "provisional"
+    },
+    {
+      "id" : "preset-mdf",
+      "name" : "MDF",
+      "feedBand" : { "lower" : 500, "upper" : 700 },
+      "spindleBand" : { "lower" : 7000, "upper" : 8000 },
+      "shippedVersion" : "provisional"
+    },
+    {
+      "id" : "preset-plywood",
+      "name" : "Plywood",
+      "feedBand" : { "lower" : 500, "upper" : 700 },
+      "spindleBand" : { "lower" : 7000, "upper" : 8000 },
+      "shippedVersion" : "provisional"
+    }
+  ]
+}

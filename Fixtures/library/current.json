@@ -1,0 +1,20 @@
+{
+  "payload" : {
+    "cutters" : [
+      {
+        "cuttingDiameter" : 6,
+        "cuttingLength" : 20,
+        "feedRate" : 750,
+        "fluteCount" : 2,
+        "id" : {
+          "rawValue" : "8f3c1d2a-0b7e-4c55-9a1f-2d6e7c8b9a10"
+        },
+        "name" : "6mm flat",
+        "shankDiameter" : 6,
+        "spindleSpeed" : 8000,
+        "type" : "flat"
+      }
+    ]
+  },
+  "schemaVersion" : 1
+}
