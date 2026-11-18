@@ -11,7 +11,8 @@ import Testing
         correlationID: id
     )
 
-    #expect(error is any CNCError)
+    let asError: any Error = error
+    #expect(asError is any CNCError)
     #expect(error.correlationID == id)
     #expect(error.userMessage.contains("truncated STL"))
     #expect(error.userMessage.contains("Re-export the model"))

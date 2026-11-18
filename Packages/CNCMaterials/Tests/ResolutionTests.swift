@@ -12,8 +12,8 @@ private func bandMaterial(
     Material(
         id: "material-1",
         name: name,
-        feedBand: feed,
-        spindleBand: spindle,
+        feedBand: MaterialBand(feed),
+        spindleBand: MaterialBand(spindle),
         origin: .user,
         shippedVersion: nil
     )

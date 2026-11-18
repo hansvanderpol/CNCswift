@@ -1,3 +1,4 @@
+import Foundation
 import Testing
 
 @testable import CNCCutters
@@ -34,7 +35,7 @@ private func cutter(
 
 @Test func closedTaxonomyHasThreeTypesWithTypeSpecificDimensions() throws {
     let flat = cutter(type: .flat, cuttingDiameter: 6)
-    let ball = cutter(type: .ballNose, ballDiameter: 6, cuttingDiameter: nil)
+    let ball = cutter(type: .ballNose, cuttingDiameter: nil, ballDiameter: 6)
     let vBit = cutter(
         type: .vBit,
         shankDiameter: 16,
@@ -67,7 +68,7 @@ private func cutter(
     }
     #expect(throws: CutterValidationError.forbiddenField("cuttingDiameter")) {
         try CutterValidator.validate(
-            cutter(type: .ballNose, ballDiameter: 6, cuttingDiameter: 6)
+            cutter(type: .ballNose, cuttingDiameter: 6, ballDiameter: 6)
         )
     }
 }

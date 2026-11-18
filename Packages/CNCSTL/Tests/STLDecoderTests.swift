@@ -21,7 +21,7 @@ private enum STLBinaryWriter {
         for triangle in triangles {
             for vertex in [triangle.normal, triangle.a, triangle.b, triangle.c] {
                 for component in [vertex.x, vertex.y, vertex.z] {
-                    var value = Float(component).littleEndian
+                    var value = Float(component).bitPattern.littleEndian
                     data.append(contentsOf: withUnsafeBytes(of: &value) { $0 })
                 }
             }
@@ -53,14 +53,8 @@ private func temporaryURL(_ name: String, data: Data) throws -> URL {
     return url
 }
 
-private func decode(
-    url: URL,
-    reports: Mutex<[StageProgress]>? = nil
-) async throws -> MeshDocument {
-    let sink = ProgressSink(
-        report: { progress in reports?.withLock { $0.append(progress) } },
-        isCancelled: { false }
-    )
+private func decode(url: URL) async throws -> MeshDocument {
+    let sink = ProgressSink(report: { _ in }, isCancelled: { false })
     return try await STLDecoder.decode(url: url, progress: sink)
 }
 
@@ -148,7 +142,11 @@ private func decode(
 @Test func progressIsReportedFrom50000Triangles() async throws {
     let reports = Mutex<[StageProgress]>([])
 
-    _ = try await decode(url: fixtureURL("relief-demo-200k.stl"), reports: reports)
+    let sink = ProgressSink(
+        report: { progress in reports.withLock { $0.append(progress) } },
+        isCancelled: { false }
+    )
+    _ = try await STLDecoder.decode(url: fixtureURL("relief-demo-200k.stl"), progress: sink)
 
     #expect(reports.withLock { $0.contains { $0.completed >= 50_000 } })
 }

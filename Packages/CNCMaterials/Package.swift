@@ -15,6 +15,10 @@ let package = Package(
     targets: [
         .target(
             name: "CNCMaterials",
+            dependencies: [
+                .product(name: "CNCCutters", package: "CNCCutters"),
+                .product(name: "CNCMachineProfile", package: "CNCMachineProfile"),
+            ],
             path: "Sources",
             swiftSettings: [.treatAllWarnings(as: .error)]
         ),

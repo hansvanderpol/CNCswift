@@ -15,8 +15,8 @@ private func material(
     Material(
         id: id,
         name: name,
-        feedBand: feedLower...feedUpper,
-        spindleBand: spindleLower...spindleUpper,
+        feedBand: MaterialBand(feedLower, feedUpper),
+        spindleBand: MaterialBand(spindleLower, spindleUpper),
         origin: origin,
         shippedVersion: shippedVersion
     )
@@ -73,7 +73,7 @@ private func material(
         try MaterialValidator.validate(material(name: "MDF"), against: Presets.all)
     }
     #expect(throws: MaterialValidationError.duplicateIdentifier) {
-        try MaterialValidator.validate(material(id: "user-1"), against: [user])
+        try MaterialValidator.validate(material(id: "user-1", name: "Different oak"), against: [user])
     }
 }
 

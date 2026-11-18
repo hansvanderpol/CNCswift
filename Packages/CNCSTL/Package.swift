@@ -15,6 +15,10 @@ let package = Package(
     targets: [
         .target(
             name: "CNCSTL",
+            dependencies: [
+                .product(name: "CNCDiagnostics", package: "CNCDiagnostics"),
+                .product(name: "CNCGeometry", package: "CNCGeometry"),
+            ],
             path: "Sources",
             swiftSettings: [.treatAllWarnings(as: .error)]
         ),
