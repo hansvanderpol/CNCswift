@@ -49,17 +49,17 @@ Do not silently rewrite `spec.md` while implementing. The clarified spec, `plan.
 
 **Purpose**: Workspace, Swift 6 settings, build/test/bundle tooling, entitlements, and fixture skeleton. No product behaviour yet.
 
-- [ ] T001 Create the root `Package.swift` with Swift 6 language mode, complete concurrency checking, warnings as errors, sixteen local packages, and the `CNCswiftApp` executable target — `Package.swift`
-- [ ] T002 [P] Add package skeletons with a source and Swift Testing test target for all sixteen packages: `CNCMachineProfile`, `CNCDiagnostics`, `CNCStorage`, `CNCGeometry`, `CNCSTL`, `CNCCutters`, `CNCCuttersStore`, `CNCMaterials`, `CNCMaterialsStore`, `CNCToolpath`, `CNCGCode`, `CNCValidation`, `CNCSimulation`, `CNCPipeline`, `MainScreenUI`, `CutterLibraryModalUI` — `Packages/*/Package.swift`
-- [ ] T003 [P] Add the app skeleton with an `@main` entry point and a `SwiftUI.Scene` body so RealityKit's `Scene` name does not create ambiguity (research D3) — `App/Sources/CNCswiftApp/CNCswiftApp.swift`
-- [ ] T004 [P] Add the Swift-format configuration referenced by the format gate — `.swift-format`
-- [ ] T005 [P] Add `ci.sh` resolving the Swift Testing macro plugin path dynamically, then running format lint, build, and test in order (research D2) — `Scripts/ci.sh`
-- [ ] T006 [P] Add `make-app.sh` assembling `CNCswift.app` from the built executable with `Info.plist`, bundle identifier `com.hansvanderpol.CNCswift`, and ad-hoc signing via `/usr/bin/codesign --sign -` (FR-075, FR-076, constitution v4.3.0) — `Scripts/make-app.sh`, `App/Resources/Info.plist`
-- [ ] T007 [P] Add sandbox entitlements declaring app sandbox and user-selected file read/write only; no hardware or network entitlement (FR-073) — `App/Resources/CNCswift.entitlements`
-- [ ] T008 [P] Create fixture directories and `Fixtures/README.md` enumerating exactly five versioned reference models — ASCII relief, binary relief, 200,000-triangle relief, deep cavity, fine-detail relief — with each file's purpose and an amendment note for adding/removing models (SC-003, SC-012, clarification Q5) — `Fixtures/README.md`
-- [ ] T009 [P] Add the five reference STL fixtures named in `Fixtures/README.md`: `relief-demo-ascii.stl`, `relief-demo-binary.stl`, `relief-demo-200k.stl`, `deep-cavity.stl`, `fine-detail.stl` — `Fixtures/stl/`
-- [ ] T010 [P] Add ignore rules for `.build/`, `.DS_Store`, generated `.app` bundles, and `.idea/` — `.gitignore`
-- [ ] T011 [P] Record the real build, test, format, and bundle commands and remove stale repository-state claims — `AGENTS.md`
+- [X] T001 Create the root `Package.swift` with Swift 6 language mode, complete concurrency checking, warnings as errors, sixteen local packages, and the `CNCswiftApp` executable target — `Package.swift`
+- [X] T002 [P] Add package skeletons with a source and Swift Testing test target for all sixteen packages: `CNCMachineProfile`, `CNCDiagnostics`, `CNCStorage`, `CNCGeometry`, `CNCSTL`, `CNCCutters`, `CNCCuttersStore`, `CNCMaterials`, `CNCMaterialsStore`, `CNCToolpath`, `CNCGCode`, `CNCValidation`, `CNCSimulation`, `CNCPipeline`, `MainScreenUI`, `CutterLibraryModalUI` — `Packages/*/Package.swift`
+- [X] T003 [P] Add the app skeleton with an `@main` entry point and a `SwiftUI.Scene` body so RealityKit's `Scene` name does not create ambiguity (research D3) — `App/Sources/CNCswiftApp/CNCswiftApp.swift`
+- [X] T004 [P] Add the Swift-format configuration referenced by the format gate — `.swift-format`
+- [X] T005 [P] Add `ci.sh` resolving the Swift Testing macro plugin path dynamically, then running format lint, build, and test in order (research D2) — `Scripts/ci.sh`
+- [X] T006 [P] Add `make-app.sh` assembling `CNCswift.app` from the built executable with `Info.plist`, bundle identifier `com.hansvanderpol.CNCswift`, and ad-hoc signing via `/usr/bin/codesign --sign -` (FR-075, FR-076, constitution v4.3.0) — `Scripts/make-app.sh`, `App/Resources/Info.plist`
+- [X] T007 [P] Add sandbox entitlements declaring app sandbox and user-selected file read/write only; no hardware or network entitlement (FR-073) — `App/Resources/CNCswift.entitlements`
+- [X] T008 [P] Create fixture directories and `Fixtures/README.md` enumerating exactly five versioned reference models — ASCII relief, binary relief, 200,000-triangle relief, deep cavity, fine-detail relief — with each file's purpose and an amendment note for adding/removing models (SC-003, SC-012, clarification Q5) — `Fixtures/README.md`
+- [X] T009 [P] Add the five reference STL fixtures named in `Fixtures/README.md`: `relief-demo-ascii.stl`, `relief-demo-binary.stl`, `relief-demo-200k.stl`, `deep-cavity.stl`, `fine-detail.stl` — `Fixtures/stl/`
+- [X] T010 [P] Add ignore rules for `.build/`, `.DS_Store`, generated `.app` bundles, and `.idea/` — `.gitignore`
+- [X] T011 [P] Record the real build, test, format, and bundle commands and remove stale repository-state claims — `AGENTS.md`
 
 **Checkpoint**: `swift build` succeeds on empty targets and `Scripts/ci.sh` runs green.
 

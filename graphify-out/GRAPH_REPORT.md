@@ -1,22 +1,22 @@
-# Graph Report - CNCswift  (2026-11-17)
+# Graph Report - CNCswift  (2026-11-18)
 
 ## Corpus Check
-- 68 files · ~71,521 words
+- 121 files · ~76,046 words
 - Verdict: corpus is large enough that graph structure adds value.
-- Unclassified: 3 file(s) not represented in the graph (top: .ini 2, (none) 1)
+- Unclassified: 12 file(s) not represented in the graph (top: .stl 5, (none) 3, .ini 2)
 
 ## Summary
-- 676 nodes · 691 edges · 51 communities (49 shown, 2 thin omitted)
-- Extraction: 99% EXTRACTED · 1% INFERRED · 0% AMBIGUOUS · INFERRED: 9 edges (avg confidence: 0.73)
+- 765 nodes · 755 edges · 76 communities (53 shown, 23 thin omitted)
+- Extraction: 99% EXTRACTED · 1% INFERRED · 0% AMBIGUOUS · INFERRED: 11 edges (avg confidence: 0.77)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `5e1792c9`
+- Built from commit: `08fe7cb3`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
 ## Community Hubs (Navigation)
-- plan.md
+- Contract: Cutter Library
 - Skill: Test Script (Grafana k6)
 - steps
 - common.sh
@@ -37,7 +37,7 @@
 - Contract: Stage Boundaries
 - Skill: Data Definition
 - Acceptance Criterias
-- create-new-feature.sh
+- Testing
 - speckit.plan.md
 - speckit.specify.md
 - speckit.tasks.md
@@ -66,39 +66,47 @@
 - Context7
 - checklist-template.md
 - scope/SKILL.md
+- Contract: G-code Output File
+- Contract: Machine Profile
+- Specification Quality Checklist: STL to Machine-Ready G-code
+- PackageDescription
+- Quickstart: STL to Machine-Ready G-code
+- Reference Fixtures
+- ci.sh
+- make-app.sh
 
 ## God Nodes (most connected - your core abstractions)
 1. `Phase 1 Data Model: STL to Machine-Ready G-code` - 18 edges
-2. `Phase 0 Research: STL to Machine-Ready G-code` - 17 edges
-3. `Contract: Stage Boundaries` - 13 edges
-4. `Tasks: STL to Machine-Ready G-code` - 13 edges
-5. `Tasks: [FEATURE NAME]` - 13 edges
-6. `create-new-feature.sh script` - 11 edges
-7. `Contract: Cutter Library` - 10 edges
-8. `End-to-end validation scenarios` - 10 edges
-9. `Skill: Technical Design` - 10 edges
-10. `UC-999 — Create Customer Support Ticket` - 10 edges
+2. `PackageDescription` - 17 edges
+3. `Phase 0 Research: STL to Machine-Ready G-code` - 17 edges
+4. `Testing` - 16 edges
+5. `Tasks: STL to Machine-Ready G-code` - 14 edges
+6. `Contract: Stage Boundaries` - 14 edges
+7. `Tasks: [FEATURE NAME]` - 13 edges
+8. `Contract: Cutter Library` - 11 edges
+9. `End-to-end validation scenarios` - 11 edges
+10. `create-new-feature.sh script` - 11 edges
 
 ## Surprising Connections (you probably didn't know these)
+- `Repository state` --references--> `CNCswiftApp`  [INFERRED]
+  AGENTS.md → App/Sources/CNCswiftApp/CNCswiftApp.swift
+- `Phase 1: Setup (Shared Infrastructure)` --references--> `CNCswiftApp`  [INFERRED]
+  specs/001-stl-to-gcode/tasks.md → App/Sources/CNCswiftApp/CNCswiftApp.swift
 - `2. Extract the schema (what to read from where)` --references--> `headers()`  [INFERRED]
   .opencode/skills/test-script-k6/references/openapi-grounding.md → .opencode/skills/test-script-k6/references/config-skeleton.js
 - `Ground the schema (OpenAPI 3.x)` --references--> `headers()`  [INFERRED]
   .opencode/skills/test-script-k6/SKILL.md → .opencode/skills/test-script-k6/references/config-skeleton.js
 - `Output` --references--> `headers()`  [INFERRED]
   .opencode/skills/test-script-k6/SKILL.md → .opencode/skills/test-script-k6/references/config-skeleton.js
-- `Process` --references--> `headers()`  [INFERRED]
-  .opencode/skills/test-script-k6/SKILL.md → .opencode/skills/test-script-k6/references/config-skeleton.js
-- `create-new-feature.sh script` --calls--> `get_repo_root()`  [EXTRACTED]
-  .specify/scripts/bash/create-new-feature.sh → .specify/scripts/bash/common.sh
 
 ## Import Cycles
 - None detected.
 
-## Communities (51 total, 2 thin omitted)
+## Communities (76 total, 23 thin omitted)
 
-### Community 0 - "plan.md"
-Cohesion: 0.06
-Nodes (29): Content Quality, Feature Readiness, Notes, Requirement Completeness, Specification Quality Checklist: STL to Machine-Ready G-code, Change notification (FR-060, research D14), Contract: Cutter Library, Cross-module import rule (+21 more)
+### Community 0 - "Contract: Cutter Library"
+Cohesion: 0.18
+Nodes (11): Change notification (FR-060, research D14), Contract: Cutter Library, Cross-module import rule, Document schema (v1), Entry validation, Generation preflight (FR-033, FR-049), Migration contract, Read-only consumption rules (+3 more)
 
 ### Community 1 - "Skill: Test Script (Grafana k6)"
 Cohesion: 0.07
@@ -109,8 +117,8 @@ Cohesion: 0.06
 Nodes (30): args, inputs, integration, spec, default, prompt, type, any (+22 more)
 
 ### Community 3 - "common.sh"
-Cohesion: 0.16
-Nodes (21): check-prerequisites.sh script, check_dir(), check_file(), find_specify_root(), format_speckit_command(), get_current_branch(), get_feature_paths(), get_invoke_separator() (+13 more)
+Cohesion: 0.11
+Nodes (30): check-prerequisites.sh script, check_dir(), check_file(), find_specify_root(), format_speckit_command(), get_current_branch(), get_feature_paths(), get_invoke_separator() (+22 more)
 
 ### Community 4 - "Tasks: [FEATURE NAME]"
 Cohesion: 0.07
@@ -118,7 +126,7 @@ Nodes (26): Dependencies & Execution Order, Format: `[ID] [P?] [Story] Descripti
 
 ### Community 5 - "Tasks: STL to Machine-Ready G-code"
 Cohesion: 0.07
-Nodes (27): Dependencies & execution order, Format, Implementation, Implementation for User Story 1, Implementation for User Story 2, Implementation for User Story 3, Implementation strategy, Incremental delivery (+19 more)
+Nodes (28): Dependencies & Execution Order, Format: `[ID] [P?] [Story] Description`, Implementation for Foundation, Implementation for User Story 1, Implementation for User Story 2, Implementation for User Story 3, Implementation Strategy, Incremental Delivery (+20 more)
 
 ### Community 6 - "speckit.analyze.md"
 Cohesion: 0.08
@@ -129,16 +137,16 @@ Cohesion: 0.08
 Nodes (24): API Design, `/api/v1/foo/bar`, Basic Flow, Basic Logic, Changelog, Database Design, Entry Point 1 (e.g. API /api/v1/foo/bar), Failure & Retry Registry (+16 more)
 
 ### Community 8 - "Functional Requirements"
-Cohesion: 0.09
-Nodes (23): Assumptions, Carving material, Clarifications, Cutter library, Diagnostics, accessibility, and privacy, Edge Cases, Feature Specification: STL to Machine-Ready G-code, Functional Requirements (+15 more)
+Cohesion: 0.08
+Nodes (24): Assumptions, Carving material, Clarifications, Cutter library, Diagnostics, accessibility, and privacy, Edge Cases, Feature Specification: STL to Machine-Ready G-code, Functional Requirements (+16 more)
 
 ### Community 9 - "Phase 1 Data Model: STL to Machine-Ready G-code"
 Cohesion: 0.11
 Nodes (19): Built-in presets (shipped, read-only), Cutter, CutterLibrary, EffectiveCuttingValues, GCodeProgram, GenerationRecord (file header), Job state transitions, JobSettings (+11 more)
 
 ### Community 10 - "End-to-end validation scenarios"
-Cohesion: 0.12
-Nodes (17): End-to-end validation scenarios, Format check, Manual controller check, Prerequisites, Quickstart: STL to Machine-Ready G-code, Run, Setup, Test commands (+9 more)
+Cohesion: 0.18
+Nodes (11): End-to-end validation scenarios, VS-10 — Feature smaller than the cutter (FR-041), VS-1 — Happy path: STL to `.nc` (SC-001, SC-002, SC-003, SC-013), VS-2 — Determinism (SC-005), VS-3 — Rejection, not repair (SC-004), VS-4 — Start and stop block integrity (SC-003), VS-5 — 3D preview (SC-012), VS-6 — Cutter edit propagates (SC-007) (+3 more)
 
 ### Community 11 - "Phase 0 Research: STL to Machine-Ready G-code"
 Cohesion: 0.12
@@ -153,8 +161,8 @@ Cohesion: 0.13
 Nodes (15): Complexity Tracking, Constitution Check, Design Flow, Documentation (this feature), Implementation Plan: STL to Machine-Ready G-code, Package dependency graph, Package rationale (Principle II), Post-Design Constitution Re-check (+7 more)
 
 ### Community 14 - "AGENTS.md"
-Cohesion: 0.14
-Nodes (12): Agent behaviour, Coding standards, Constitution, Documents and diagrams, Feature state and layout, Generated files, graphify, k6 scripts (+4 more)
+Cohesion: 0.10
+Nodes (17): Agent behaviour, Build, lint, and test commands (verified on this machine), Coding standards, Constitution, Documents and diagrams, Feature state and layout, Generated files, graphify (+9 more)
 
 ### Community 15 - "DDE-999 — Customer Support Ticket"
 Cohesion: 0.15
@@ -169,8 +177,8 @@ Cohesion: 0.15
 Nodes (12): Assumptions, Edge Cases, Feature Specification: [FEATURE NAME], Functional Requirements, Key Entities *(include if feature involves data)*, Measurable Outcomes, Requirements *(mandatory)*, Success Criteria *(mandatory)* (+4 more)
 
 ### Community 18 - "Contract: Stage Boundaries"
-Cohesion: 0.15
-Nodes (13): Contract: Stage Boundaries, Decode, Dependency direction, Error shape, Material resolution, Orchestration, Persistence, Planning (+5 more)
+Cohesion: 0.14
+Nodes (14): Commit, Contract: Stage Boundaries, Decode, Dependency direction, Error shape, Material resolution, Orchestration, Persistence (+6 more)
 
 ### Community 19 - "Skill: Data Definition"
 Cohesion: 0.17
@@ -179,10 +187,6 @@ Nodes (11): Always (logical data model), Clarifying Question (mandatory, every p
 ### Community 20 - "Acceptance Criterias"
 Cohesion: 0.17
 Nodes (11): AC-999-001 - Successful Ticket Submission, AC-999-002 - Ticket Submitted with Attachments, AC-999-003 - High-Priority Category Auto-Assignment, AC-999-004 - Required Fields Validation, AC-999-005 - Invalid Attachment Rejected, AC-999-006 - Unauthenticated Access Blocked, AC-999-007 - System Unavailable, Acceptance Criterias (+3 more)
-
-### Community 21 - "create-new-feature.sh"
-Cohesion: 0.36
-Nodes (9): clean_branch_name(), contains_non_ascii(), fit_branch_name(), generate_branch_name(), get_highest_from_specs(), is_feature_number_in_range(), create-new-feature.sh script, spec_prefix_exists() (+1 more)
 
 ### Community 22 - "speckit.plan.md"
 Cohesion: 0.18
@@ -292,23 +296,45 @@ Nodes (3): Context7, Install, Key Benefits
 Cohesion: 0.50
 Nodes (3): [Category 1], [Category 2], Notes
 
+### Community 52 - "Contract: G-code Output File"
+Cohesion: 0.22
+Nodes (9): Body formatting, Contract: G-code Output File, Example fragment, Explicitly forbidden in output, File-level rules, Header, Output filename, Program body order (+1 more)
+
+### Community 53 - "Contract: Machine Profile"
+Cohesion: 0.29
+Nodes (6): Conformance rules used by validation, Contract: Machine Profile, Controller setup is not program content, Invariants, Profile document schema, Values fixed by the constitution
+
+### Community 54 - "Specification Quality Checklist: STL to Machine-Ready G-code"
+Cohesion: 0.40
+Nodes (5): Content Quality, Feature Readiness, Notes, Requirement Completeness, Specification Quality Checklist: STL to Machine-Ready G-code
+
+### Community 56 - "Quickstart: STL to Machine-Ready G-code"
+Cohesion: 0.29
+Nodes (7): Format check, Manual controller check, Prerequisites, Quickstart: STL to Machine-Ready G-code, Run, Setup, Test commands
+
+### Community 57 - "Reference Fixtures"
+Cohesion: 0.40
+Nodes (4): Amendment rule, Other fixture directories, Reference Fixtures, Reference STL models (exactly five)
+
 ## Knowledge Gaps
-- **2 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+- **1 isolated node(s):** `.body`
+  These have ≤1 connection - possible missing edges or undocumented components. (Counts symbols only; 574 node(s) total have ≤1 connection when file, concept and rationale nodes are included.)
+- **23 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `Tasks: STL to Machine-Ready G-code` connect `Tasks: STL to Machine-Ready G-code` to `plan.md`?**
-  _High betweenness centrality (0.019) - this node is a cross-community bridge._
-- **Should `plan.md` be split into smaller, more focused modules?**
-  _Cohesion score 0.05897435897435897 - nodes in this community are weakly interconnected._
 - **Why does `Feature Specification: STL to Machine-Ready G-code` connect `Functional Requirements` to `plan.md`?**
-  _High betweenness centrality (0.016) - this node is a cross-community bridge._
+  _High betweenness centrality (0.011) - this node is a cross-community bridge._
+- **What connects `.body` to the rest of the system?**
+  _1 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `Skill: Test Script (Grafana k6)` be split into smaller, more focused modules?**
   _Cohesion score 0.06628787878787878 - nodes in this community are weakly interconnected._
 - **Why does `Phase 1 Data Model: STL to Machine-Ready G-code` connect `Phase 1 Data Model: STL to Machine-Ready G-code` to `plan.md`?**
-  _High betweenness centrality (0.013) - this node is a cross-community bridge._
+  _High betweenness centrality (0.009) - this node is a cross-community bridge._
 - **Should `steps` be split into smaller, more focused modules?**
   _Cohesion score 0.06451612903225806 - nodes in this community are weakly interconnected._
-- **Should `Tasks: [FEATURE NAME]` be split into smaller, more focused modules?**
-  _Cohesion score 0.07407407407407407 - nodes in this community are weakly interconnected._
+- **Why does `Quickstart: STL to Machine-Ready G-code` connect `Quickstart: STL to Machine-Ready G-code` to `End-to-end validation scenarios`, `plan.md`?**
+  _High betweenness centrality (0.008) - this node is a cross-community bridge._
+- **Should `common.sh` be split into smaller, more focused modules?**
+  _Cohesion score 0.11470985155195682 - nodes in this community are weakly interconnected._

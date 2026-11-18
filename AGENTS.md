@@ -23,10 +23,29 @@
 - Never execute destructive commands without approval.
 
 ## Repository state
-- This is a Spec-Driven Development (SDD) workspace created by GitHub Spec Kit 1.3.3 with the OpenCode integration. It contains only `.specify/` scaffolding and `.opencode/` commands/skills — no application source, build system, tests, README, or git repository.
-- `.idea/` configures JDK 25, but no Java build exists. Do not assume a stack; establish it in the constitution and each feature's `plan.md`.
-- Do not invent build, lint, or test commands. When code is added, update this file with the commands that actually work.
-- Run `git init` before relying on Spec Kit's git/branch hooks; without a repo they are no-ops.
+- This is a Spec-Driven Development (SDD) workspace created by GitHub Spec Kit 1.3.3 with the OpenCode integration. It now contains a git repository, the `001-stl-to-gcode` feature artifacts, and a Swift Package Manager workspace.
+- The stack is Swift 6.4.2 / macOS 27 (arm64) with SwiftUI and RealityKit; Command Line Tools is the active developer directory (Xcode is unavailable). The root `Package.swift` aggregates sixteen local packages under `Packages/` plus the `CNCswiftApp` executable under `App/Sources/`.
+- `.idea/` exists but there is no Java build; do not infer a JVM stack from it.
+- Feature onboarding and validation scenarios are recorded in `specs/001-stl-to-gcode/quickstart.md`; the executable gates are in `Scripts/ci.sh` and `Scripts/make-app.sh`.
+
+## Build, lint, and test commands (verified on this machine)
+Run from the repository root:
+
+```bash
+Scripts/ci.sh                       # format lint, workspace build, then all 16 package test suites
+swift build                         # build the workspace and CNCswiftApp
+swift format lint --configuration .swift-format --recursive Package.swift App Packages
+swift format format --configuration .swift-format --in-place --recursive Package.swift App Packages
+PLUGIN="$(xcode-select -p)/usr/lib/swift/host/plugins/testing/libTestingMacros.dylib"
+swift test --package-path Packages/<Module> -Xswiftc -load-plugin-library -Xswiftc "$PLUGIN"
+Scripts/make-app.sh                 # assemble and ad-hoc sign .build/CNCswift.app
+codesign -dvv .build/CNCswift.app
+codesign -d --entitlements :- .build/CNCswift.app
+```
+
+- `swift test` from the root reports "no tests found": SwiftPM only runs the root package's tests, and each local package owns its test target. Test each package with `--package-path`; `Scripts/ci.sh` loops over all sixteen.
+- Swift Testing's macro plugin is not on SwiftPM's default search path under Command Line Tools, so every `swift test` invocation needs `-load-plugin-library` with the plugin path above.
+- Build output lives under `.build/out/`; `.build/debug` is a symlink to `.build/out/Products/Debug`.
 
 ## Workflow
 Commands are OpenCode slash commands invoked as `/speckit.<name>`:
@@ -86,7 +105,7 @@ All artifact skills have `disable-model-invocation: true`: invoke them only when
 - Each case must run standalone with `k6 run` and may import only `./config.js`.
 
 ## Constitution
-- `.specify/memory/constitution.md` is still the placeholder template. Do not treat its sample principles as project rules; run `/speckit.constitution` to establish real principles before relying on constitution gates.
+- `.specify/memory/constitution.md` holds the active CNCswift constitution (v4.3.0). It is authoritative for architecture, concurrency, test-first, accessibility, diagnostics, dialect, storage, and distribution gates.
 
 ## graphify
 
