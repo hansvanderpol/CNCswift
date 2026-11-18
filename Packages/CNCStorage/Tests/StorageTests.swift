@@ -124,7 +124,7 @@ private func store(
         return
     }
     #expect(version == 3)
-    #expect(fs.read(url) == original)
+    #expect(try fs.read(url) == original)
 }
 
 @Test func corruptDocumentIsReported() throws {

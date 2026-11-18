@@ -38,6 +38,25 @@ private enum WorkFailure: Error, Equatable {
     #expect(outcome == .cancelled)
 }
 
+@Test(.timeLimit(.minutes(1))) func taskCancellationBridgesIntoTheProgressSink() async {
+    let source = CancellationSource()
+    let sink = source.makeSink(report: { _ in })
+    #expect(!sink.isCancelled())
+
+    let task = Task {
+        await withCooperativeCancellation(source: source) {
+            while !source.isCancelled {
+                await Task.yield()
+            }
+        }
+    }
+    task.cancel()
+    await task.value
+
+    #expect(source.isCancelled)
+    #expect(sink.isCancelled())
+}
+
 @Test func thrownWorkPropagatesAsFailure() async {
     let sink = ProgressSink(report: { _ in }, isCancelled: { false })
 

@@ -118,7 +118,9 @@ public enum STLDecoder {
         return try decodeASCII(data, progress: progress)
     }
 
-    private static func decodeBinaryIfPossible(_ data: Data, progress: ProgressSink) throws -> MeshDocument? {
+    private static func decodeBinaryIfPossible(_ data: Data, progress: ProgressSink) throws
+        -> MeshDocument?
+    {
         guard data.count >= 84 else {
             if looksLikeASCII(data) { return nil }
             throw DecodeError(kind: .truncated)
@@ -141,8 +143,9 @@ public enum STLDecoder {
     }
 
     private static func looksLikeASCII(_ data: Data) -> Bool {
-        guard let text = String(data: data.prefix(2048), encoding: .utf8)
-            ?? String(data: data.prefix(2048), encoding: .ascii)
+        guard
+            let text = String(data: data.prefix(2048), encoding: .utf8)
+                ?? String(data: data.prefix(2048), encoding: .ascii)
         else { return false }
         let lower = text.lowercased()
         let trimmed = lower.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -150,7 +153,9 @@ public enum STLDecoder {
         return lower.contains("facet") || lower.contains("vertex") || lower.contains("endsolid")
     }
 
-    private static func decodeBinary(_ data: Data, count: Int, progress: ProgressSink) throws -> MeshDocument {
+    private static func decodeBinary(_ data: Data, count: Int, progress: ProgressSink) throws
+        -> MeshDocument
+    {
         guard data.count == 84 + count * 50 else {
             throw DecodeError(kind: data.count < 84 + count * 50 ? .truncated : .corrupt)
         }
@@ -270,7 +275,9 @@ public enum STLDecoder {
                     throw DecodeError(kind: .truncated)
                 }
                 guard verts.count == 3 else { throw DecodeError(kind: .corrupt) }
-                let a = verts[0], b = verts[1], c = verts[2]
+                let a = verts[0]
+                let b = verts[1]
+                let c = verts[2]
                 triangles.append(Triangle(a: a, b: b, c: c))
                 extendBounds(&boundsMin, &boundsMax, a)
                 extendBounds(&boundsMin, &boundsMax, b)
@@ -280,7 +287,8 @@ public enum STLDecoder {
                 } else {
                     recordEdges(a, b, c, into: &edgeCounts)
                 }
-                reportProgressIfNeeded(completed: triangles.count, total: max(triangles.count, 1), progress: progress)
+                reportProgressIfNeeded(
+                    completed: triangles.count, total: max(triangles.count, 1), progress: progress)
             } else if lineLower.hasPrefix("endsolid") {
                 sawEndsolid = true
             }
@@ -354,14 +362,18 @@ public enum STLDecoder {
             let qp = QV(p)
             let qq = QV(q)
             if (qp.x, qp.y, qp.z) <= (qq.x, qq.y, qq.z) {
-                a = qp; b = qq
+                a = qp
+                b = qq
             } else {
-                a = qq; b = qp
+                a = qq
+                b = qp
             }
         }
     }
 
-    private static func recordEdges(_ a: Vec3, _ b: Vec3, _ c: Vec3, into edgeCounts: inout [QEdge: Int]) {
+    private static func recordEdges(
+        _ a: Vec3, _ b: Vec3, _ c: Vec3, into edgeCounts: inout [QEdge: Int]
+    ) {
         edgeCounts[QEdge(a, b), default: 0] += 1
         edgeCounts[QEdge(b, c), default: 0] += 1
         edgeCounts[QEdge(c, a), default: 0] += 1

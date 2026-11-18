@@ -124,7 +124,7 @@ private func cutter(id: String = "cutter-1", name: String = "6mm flat") -> Cutte
     let store = CutterLibraryStore(fileSystem: fs, currentVersion: 1)
 
     try await store.save(cutters, to: url)
-    cutters[0].name = "Mutated after save"
+    cutters[0] = cutters[0].renamed(to: "Mutated after save")
 
     let outcome = try await store.load(from: url)
     guard case .loaded(let loaded) = outcome else {

@@ -8,15 +8,36 @@ let package = Package(
     products: [
         .library(name: "CNCSimulation", targets: ["CNCSimulation"])
     ],
+    dependencies: [
+        .package(path: "../CNCDiagnostics"),
+        .package(path: "../CNCGeometry"),
+        .package(path: "../CNCMachineProfile"),
+        .package(path: "../CNCToolpath"),
+        .package(path: "../CNCValidation"),
+    ],
     targets: [
         .target(
             name: "CNCSimulation",
+            dependencies: [
+                .product(name: "CNCDiagnostics", package: "CNCDiagnostics"),
+                .product(name: "CNCGeometry", package: "CNCGeometry"),
+                .product(name: "CNCMachineProfile", package: "CNCMachineProfile"),
+                .product(name: "CNCToolpath", package: "CNCToolpath"),
+                .product(name: "CNCValidation", package: "CNCValidation"),
+            ],
             path: "Sources",
             swiftSettings: [.treatAllWarnings(as: .error)]
         ),
         .testTarget(
             name: "CNCSimulationTests",
-            dependencies: ["CNCSimulation"],
+            dependencies: [
+                "CNCSimulation",
+                .product(name: "CNCDiagnostics", package: "CNCDiagnostics"),
+                .product(name: "CNCGeometry", package: "CNCGeometry"),
+                .product(name: "CNCMachineProfile", package: "CNCMachineProfile"),
+                .product(name: "CNCToolpath", package: "CNCToolpath"),
+                .product(name: "CNCValidation", package: "CNCValidation"),
+            ],
             path: "Tests",
             swiftSettings: [.treatAllWarnings(as: .error)]
         ),

@@ -1,17 +1,17 @@
 # Graph Report - CNCswift  (2026-11-18)
 
 ## Corpus Check
-- 137 files · ~81,983 words
+- 159 files · ~92,312 words
 - Verdict: corpus is large enough that graph structure adds value.
 - Unclassified: 12 file(s) not represented in the graph (top: .stl 5, (none) 3, .ini 2)
 
 ## Summary
-- 1012 nodes · 1261 edges · 91 communities (68 shown, 23 thin omitted)
-- Extraction: 99% EXTRACTED · 1% INFERRED · 0% AMBIGUOUS · INFERRED: 18 edges (avg confidence: 0.8)
+- 1433 nodes · 2404 edges · 108 communities (74 shown, 34 thin omitted)
+- Extraction: 95% EXTRACTED · 5% INFERRED · 0% AMBIGUOUS · INFERRED: 117 edges (avg confidence: 0.87)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `628f19b2`
+- Built from commit: `03b11891`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -21,7 +21,7 @@
 - steps
 - common.sh
 - Tasks: [FEATURE NAME]
-- Tasks: STL to Machine-Ready G-code
+- Cutter
 - speckit.analyze.md
 - Technical Design - [Feature Title]
 - Functional Requirements
@@ -74,52 +74,61 @@
 - Reference Fixtures
 - ci.sh
 - make-app.sh
+- ProgressSink
+- VersionedStore
+- CorrelationID
+- GenerationRecord
+- MachineProfile
 - ResolutionTests.swift
 - STLDecoderTests.swift
 - ProfileError
-- GeometryTests.swift
+- Vec3
 - ChangeStreamTests.swift
-- LibraryStoreTests.swift
-- cutter
-- CNCswiftApp
-- Dependencies & Execution Order
-- Implementation Strategy
-- Phase 2: Foundational (Blocking Prerequisites)
-- Phase 3: User Story 1 — Generate a validated G-code file from an STL (Priority: P1) 🎯 MVP
-- Phase 4: User Story 2 — Maintain the cutter library in a modal (Priority: P2)
-- Phase 5: User Story 3 — Preview the carve in 3D before writing the file (Priority: P3)
+- PlanningError
+- Foundation
+- MaterialValidationError
+- Equatable
+- SimulationResult
+- Cutter
+- Implementation for Foundation
+- CutterGeometry
+- Sendable
+- String
+- MaterialBand
+- FeatureReport
+- Vec3
 
 ## God Nodes (most connected - your core abstractions)
-1. `Testing` - 30 edges
-2. `ProfileError` - 18 edges
-3. `Phase 1 Data Model: STL to Machine-Ready G-code` - 18 edges
-4. `PackageDescription` - 17 edges
-5. `Phase 0 Research: STL to Machine-Ready G-code` - 17 edges
-6. `FakeFileSystem` - 15 edges
-7. `MachineProfile` - 14 edges
-8. `Tasks: STL to Machine-Ready G-code` - 14 edges
-9. `store()` - 14 edges
-10. `Contract: Stage Boundaries` - 14 edges
+1. `Vec3` - 30 edges
+2. `Testing` - 30 edges
+3. `MachineProfile` - 28 edges
+4. `ProgressSink` - 27 edges
+5. `Cutter` - 26 edges
+6. `Material` - 23 edges
+7. `AABB` - 22 edges
+8. `CutterID` - 20 edges
+9. `CutterValidationError` - 20 edges
+10. `JobSettings` - 19 edges
 
 ## Surprising Connections (you probably didn't know these)
-- `Phase 1: Setup (Shared Infrastructure)` --references--> `CNCswiftApp`  [INFERRED]
-  specs/001-stl-to-gcode/tasks.md → App/Sources/CNCswiftApp/CNCswiftApp.swift
+- `Tests for Foundation (write first; they must fail)` --references--> `ProgressSink`  [INFERRED]
+  specs/001-stl-to-gcode/tasks.md → Packages/CNCDiagnostics/Sources/Progress.swift
+- `Implementation for Foundation` --references--> `ProgressSink`  [INFERRED]
+  specs/001-stl-to-gcode/tasks.md → Packages/CNCDiagnostics/Sources/Progress.swift
 - `Repository state` --references--> `CNCswiftApp`  [INFERRED]
   AGENTS.md → App/Sources/CNCswiftApp/CNCswiftApp.swift
-- `2. Extract the schema (what to read from where)` --references--> `headers()`  [INFERRED]
-  .opencode/skills/test-script-k6/references/openapi-grounding.md → .opencode/skills/test-script-k6/references/config-skeleton.js
-- `Ground the schema (OpenAPI 3.x)` --references--> `headers()`  [INFERRED]
-  .opencode/skills/test-script-k6/SKILL.md → .opencode/skills/test-script-k6/references/config-skeleton.js
-- `Output` --references--> `headers()`  [INFERRED]
-  .opencode/skills/test-script-k6/SKILL.md → .opencode/skills/test-script-k6/references/config-skeleton.js
+- `Phase 1: Setup (Shared Infrastructure)` --references--> `CNCswiftApp`  [INFERRED]
+  specs/001-stl-to-gcode/tasks.md → App/Sources/CNCswiftApp/CNCswiftApp.swift
+- `Implementation for Foundation` --references--> `RenderedProgram`  [INFERRED]
+  specs/001-stl-to-gcode/tasks.md → Packages/CNCGCode/Sources/Protocols.swift
 
 ## Import Cycles
 - None detected.
 
-## Communities (91 total, 23 thin omitted)
+## Communities (108 total, 34 thin omitted)
 
 ### Community 0 - "Contract: Cutter Library"
-Cohesion: 0.18
+Cohesion: 0.17
 Nodes (11): Change notification (FR-060, research D14), Contract: Cutter Library, Cross-module import rule, Document schema (v1), Entry validation, Generation preflight (FR-033, FR-049), Migration contract, Read-only consumption rules (+3 more)
 
 ### Community 1 - "Skill: Test Script (Grafana k6)"
@@ -138,9 +147,9 @@ Nodes (30): check-prerequisites.sh script, check_dir(), check_file(), find_speci
 Cohesion: 0.07
 Nodes (26): Dependencies & Execution Order, Format: `[ID] [P?] [Story] Description`, Implementation for User Story 1, Implementation for User Story 2, Implementation for User Story 3, Implementation Strategy, Incremental Delivery, MVP First (User Story 1 Only) (+18 more)
 
-### Community 5 - "Tasks: STL to Machine-Ready G-code"
-Cohesion: 0.25
-Nodes (7): Format: `[ID] [P?] [Story] Description`, Notes, Path Conventions, Phase 6: Polish & Cross-Cutting Concerns, Requirement Coverage, Specification conflicts resolved in design artifacts, Tasks: STL to Machine-Ready G-code
+### Community 5 - "Cutter"
+Cohesion: 0.07
+Nodes (25): CNCCutters, CNCStorage, CutterID, .description, LibraryChange, deleted, reloaded, saved (+17 more)
 
 ### Community 6 - "speckit.analyze.md"
 Cohesion: 0.08
@@ -175,8 +184,8 @@ Cohesion: 0.13
 Nodes (15): Complexity Tracking, Constitution Check, Design Flow, Documentation (this feature), Implementation Plan: STL to Machine-Ready G-code, Package dependency graph, Package rationale (Principle II), Post-Design Constitution Re-check (+7 more)
 
 ### Community 14 - "AGENTS.md"
-Cohesion: 0.14
-Nodes (12): Agent behaviour, Build, lint, and test commands (verified on this machine), Coding standards, Constitution, Documents and diagrams, Feature state and layout, Generated files, graphify (+4 more)
+Cohesion: 0.10
+Nodes (17): Agent behaviour, Build, lint, and test commands (verified on this machine), Coding standards, Constitution, Documents and diagrams, Feature state and layout, Generated files, graphify (+9 more)
 
 ### Community 15 - "DDE-999 — Customer Support Ticket"
 Cohesion: 0.15
@@ -315,7 +324,7 @@ Cohesion: 0.50
 Nodes (3): [Category 1], [Category 2], Notes
 
 ### Community 52 - "Contract: G-code Output File"
-Cohesion: 0.22
+Cohesion: 0.20
 Nodes (9): Body formatting, Contract: G-code Output File, Example fragment, Explicitly forbidden in output, File-level rules, Header, Output filename, Program body order (+1 more)
 
 ### Community 53 - "Contract: Machine Profile"
@@ -323,92 +332,116 @@ Cohesion: 0.29
 Nodes (6): Conformance rules used by validation, Contract: Machine Profile, Controller setup is not program content, Invariants, Profile document schema, Values fixed by the constitution
 
 ### Community 54 - "Specification Quality Checklist: STL to Machine-Ready G-code"
-Cohesion: 0.40
+Cohesion: 0.33
 Nodes (5): Content Quality, Feature Readiness, Notes, Requirement Completeness, Specification Quality Checklist: STL to Machine-Ready G-code
 
 ### Community 56 - "FakeFileSystem"
-Cohesion: 0.15
-Nodes (15): FakeError, missing, FakeError, missing, corruptDocumentIsReported(), FakeError, missing, FakeFileSystem (+7 more)
+Cohesion: 0.20
+Nodes (10): storage, corruptDocumentIsReported(), FakeFileSystem, missingDocumentLoadsAsAbsent(), newerSchemaIsRefusedAndFileIsByteIdentical(), olderSchemaMigratesForwardWithoutRecordLoss(), Payload, saveStampsTheCurrentSchemaVersion() (+2 more)
 
 ### Community 57 - "Reference Fixtures"
 Cohesion: 0.40
 Nodes (4): Amendment rule, Other fixture directories, Reference Fixtures, Reference STL models (exactly five)
 
+### Community 60 - "ProgressSink"
+Cohesion: 0.06
+Nodes (27): CancellationSource, .isCancelled, withCooperativeCancellation(), CooperativeOutcome, cancelled, completed, CooperativeWork, ProgressSink (+19 more)
+
+### Community 62 - "VersionedStore"
+Cohesion: 0.07
+Nodes (16): Foundation, DocumentEnvelope, SchemaHeader, DiskFileSystem, FileSystem, StorageError, migrationFailed, writeFailed (+8 more)
+
+### Community 64 - "CorrelationID"
+Cohesion: 0.12
+Nodes (22): CNCDiagnostics, os, CNCError, CorrelationID, .description, DiagnosticCategory, cutters, decode (+14 more)
+
+### Community 70 - "MachineProfile"
+Cohesion: 0.36
+Nodes (3): MachineProfile, Material, EffectiveCuttingValues
+
 ### Community 76 - "ResolutionTests.swift"
-Cohesion: 0.13
-Nodes (13): CNCMachineProfile, CNCMaterials, bandsOutsideMachineLimitsAreStillValidRecords(), duplicateNamesAndPresetShadowingAreRejected(), invalidBandsAreRejectedAtEntry(), material(), bandMaterial(), cutter() (+5 more)
+Cohesion: 0.36
+Nodes (7): bandMaterial(), cutter(), cutterValueInsideIntersectionIsPrefilledButUnconfirmed(), cutterValueOutsideIntersectionUsesNearestBound(), emptyFeedOverlapNamesMaterialBandAndCeiling(), emptySpindleOverlapNamesMaterialBandAndFloor(), userChoiceInsideIntersectionIsConstructibleAndOutOfRangeIsNot()
 
 ### Community 77 - "STLDecoderTests.swift"
-Cohesion: 0.10
-Nodes (17): CNCDiagnostics, CNCSTL, WorkFailure, boom, asciiAndBinaryFixturesDecodeToTheSameRelief(), decode(), denseFixtureDecodesAll200000Triangles(), emptyTruncatedAndCorruptInputsAreRejected() (+9 more)
+Cohesion: 0.28
+Nodes (12): asciiAndBinaryFixturesDecodeToTheSameRelief(), decode(), denseFixtureDecodesAll200000Triangles(), emptyTruncatedAndCorruptInputsAreRejected(), fixtureURL(), nonManifoldAndDegenerateTrianglesAreRejected(), progressIsReportedFrom50000Triangles(), rejectionNamesTheFileAndDefect() (+4 more)
 
 ### Community 78 - "ProfileError"
-Cohesion: 0.10
-Nodes (28): LibraryDocument, ControllerSetup, Envelope, MachineLimits, MachineProfile, ProfileDocument, ProfileError, conflictingCommands (+20 more)
+Cohesion: 0.09
+Nodes (26): ControllerSetup, Envelope, MachineLimits, ProfileDocument, ProfileError, conflictingCommands, inconsistentRapidSetup, inconsistentSpindleBuffer (+18 more)
 
-### Community 79 - "GeometryTests.swift"
-Cohesion: 0.24
-Nodes (5): CNCGeometry, bruteForceHeight(), bvhHeightsMatchBruteForceRayCast(), meshInvariantsAreComputedFromTriangles(), triangle()
+### Community 79 - "Vec3"
+Cohesion: 0.13
+Nodes (13): BVH, Node, .bounds, branch, leaf, Mesh, .bounds, .triangleCount (+5 more)
 
 ### Community 80 - "ChangeStreamTests.swift"
 Cohesion: 0.06
-Nodes (23): CNCCutters, CNCCuttersStore, CNCStorage, Foundation, bufferedStreamDoesNotDropEventsPublishedBeforeConsumption(), changeStreamDeliversSavedDeletedAndReloadedInOrder(), cutter(), failedSaveDoesNotPublishASavedEvent() (+15 more)
+Nodes (21): CNCCuttersStore, cutter(), DocumentEnvelope, FakeFileSystem, identifierSurvivesEditSaveReloadAndMigration(), LibraryDocument, cutter(), DocumentEnvelope (+13 more)
 
-### Community 81 - "LibraryStoreTests.swift"
-Cohesion: 0.14
-Nodes (12): cutter(), DocumentEnvelope, FakeError, missing, write, FakeFileSystem, LibraryDocument, missingDocumentLoadsAsAbsent() (+4 more)
+### Community 81 - "PlanningError"
+Cohesion: 0.06
+Nodes (30): FakeError, missing, write, FakeError, missing, FakeError, missing, write (+22 more)
 
-### Community 82 - "cutter"
-Cohesion: 0.26
-Nodes (7): closedTaxonomyHasThreeTypesWithTypeSpecificDimensions(), cutter(), entryRulesRejectOutOfRangeValues(), identifierSurvivesEdits(), requiredAndForbiddenFieldsAreEnforcedPerType(), shankDominanceRequiresAtLeastMaxCuttingExtent(), vBitTipFittingTheShankIsNotSufficient()
+### Community 82 - "Foundation"
+Cohesion: 0.13
+Nodes (18): CutterValidationError, emptyName, feedOutOfRange, forbiddenField, invalidAngle, invalidFluteCount, missingField, nonPositive (+10 more)
 
-### Community 83 - "CNCswiftApp"
-Cohesion: 0.33
-Nodes (5): Repository state, CNCswiftApp, .body, Phase 1: Setup (Shared Infrastructure), SwiftUI
+### Community 83 - "MaterialValidationError"
+Cohesion: 0.16
+Nodes (14): CNCMaterials, MaterialValidationError, duplicateIdentifier, duplicateName, emptyName, invertedBand, nonPositiveBound, Presets (+6 more)
 
-### Community 84 - "Dependencies & Execution Order"
-Cohesion: 0.40
-Nodes (5): Dependencies & Execution Order, Parallel opportunities, Phase dependencies, User story dependencies, Within each user story
+### Community 84 - "Equatable"
+Cohesion: 0.20
+Nodes (11): AABB, STLEncoding, ascii, binary, JobSettings, Move, MoveMode, cut (+3 more)
 
-### Community 85 - "Implementation Strategy"
-Cohesion: 0.50
-Nodes (4): Implementation Strategy, Incremental Delivery, MVP First (User Story 1 Only), Parallel Team Strategy
+### Community 85 - "SimulationResult"
+Cohesion: 0.28
+Nodes (5): CNCGeometry, Heightmap, MaterialRemovalSimulating, SimulationResult, SimulationViolation
 
-### Community 86 - "Phase 2: Foundational (Blocking Prerequisites)"
-Cohesion: 0.67
-Nodes (3): Implementation for Foundation, Phase 2: Foundational (Blocking Prerequisites), Tests for Foundation (write first; they must fail)
+### Community 86 - "Cutter"
+Cohesion: 0.23
+Nodes (6): Cutter, .maxCuttingExtent, CutterType, ballNose, flat, vBit
 
-### Community 87 - "Phase 3: User Story 1 — Generate a validated G-code file from an STL (Priority: P1) 🎯 MVP"
-Cohesion: 0.67
-Nodes (3): Implementation for User Story 1, Phase 3: User Story 1 — Generate a validated G-code file from an STL (Priority: P1) 🎯 MVP, Tests for User Story 1 (write first; they must fail)
+### Community 87 - "Implementation for Foundation"
+Cohesion: 0.09
+Nodes (22): CNCGCode, CNCMachineProfile, CNCSimulation, CNCSTL, CNCToolpath, CNCValidation, GCodeRendering, ProgramWriter (+14 more)
 
-### Community 88 - "Phase 4: User Story 2 — Maintain the cutter library in a modal (Priority: P2)"
-Cohesion: 0.67
-Nodes (3): Implementation for User Story 2, Phase 4: User Story 2 — Maintain the cutter library in a modal (Priority: P2), Tests for User Story 2 (write first; they must fail)
+### Community 88 - "CutterGeometry"
+Cohesion: 0.20
+Nodes (8): Geometry, CutterGeometry, ballNose, flat, vBit, Transform, effectiveRadiusFollowsCutterGeometryFormulas(), frontLeftTopTransformMapsModelCornersOntoMachineOrigin()
 
-### Community 89 - "Phase 5: User Story 3 — Preview the carve in 3D before writing the file (Priority: P3)"
-Cohesion: 0.67
-Nodes (3): Implementation for User Story 3, Phase 5: User Story 3 — Preview the carve in 3D before writing the file (Priority: P3), Tests for User Story 3 (write first; they must fail)
+### Community 89 - "Sendable"
+Cohesion: 0.06
+Nodes (37): Finding, FindingSeverity, error, warning, ParsedMove, ParsedMoveMode, cut, rapid (+29 more)
+
+### Community 91 - "String"
+Cohesion: 0.19
+Nodes (13): BandConflict, BandKind, feed, spindle, EffectiveValueSource, cutterPrefill, nearestBound, userChoice (+5 more)
+
+### Community 92 - "MaterialBand"
+Cohesion: 0.24
+Nodes (5): MaterialBand, MaterialOrigin, builtIn, user, MaterialValidator
 
 ## Knowledge Gaps
-- **21 isolated node(s):** `missing`, `write`, `missing`, `missing`, `write` (+16 more)
-  These have ≤1 connection - possible missing edges or undocumented components. (Counts symbols only; 642 node(s) total have ≤1 connection when file, concept and rationale nodes are included.)
-- **23 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+- **121 isolated node(s):** `.isCancelled`, `completed`, `cancelled`, `.maxCuttingExtent`, `.description` (+116 more)
+  These have ≤1 connection - possible missing edges or undocumented components. (Counts symbols only; 756 node(s) total have ≤1 connection when file, concept and rationale nodes are included.)
+- **34 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `Testing` connect `Testing` to `ResolutionTests.swift`, `STLDecoderTests.swift`, `ProfileError`, `GeometryTests.swift`, `ChangeStreamTests.swift`, `LibraryStoreTests.swift`, `cutter`, `FakeFileSystem`?**
-  _High betweenness centrality (0.041) - this node is a cross-community bridge._
-- **What connects `missing`, `write`, `missing` to the rest of the system?**
-  _21 weakly-connected nodes found - possible documentation gaps or missing edges._
+- **Why does `CutterValidationError` connect `Foundation` to `PlanningError`, `String`, `Equatable`?**
+  _High betweenness centrality (0.033) - this node is a cross-community bridge._
+- **What connects `.isCancelled`, `completed`, `cancelled` to the rest of the system?**
+  _121 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `Skill: Test Script (Grafana k6)` be split into smaller, more focused modules?**
   _Cohesion score 0.06628787878787878 - nodes in this community are weakly interconnected._
-- **Why does `Foundation` connect `ChangeStreamTests.swift` to `STLDecoderTests.swift`, `ProfileError`, `LibraryStoreTests.swift`, `Testing`, `FakeFileSystem`?**
-  _High betweenness centrality (0.010) - this node is a cross-community bridge._
+- **Why does `Testing` connect `Testing` to `CorrelationID`, `Cutter`, `ResolutionTests.swift`, `STLDecoderTests.swift`, `ProfileError`, `Vec3`, `ChangeStreamTests.swift`, `Foundation`, `MaterialValidationError`, `FakeFileSystem`, `ProgressSink`?**
+  _High betweenness centrality (0.025) - this node is a cross-community bridge._
 - **Should `steps` be split into smaller, more focused modules?**
   _Cohesion score 0.06451612903225806 - nodes in this community are weakly interconnected._
-- **Why does `FakeFileSystem` connect `ChangeStreamTests.swift` to `ProfileError`?**
-  _High betweenness centrality (0.008) - this node is a cross-community bridge._
+- **Why does `Foundation` connect `VersionedStore` to `CorrelationID`, `Cutter`, `STLDecoderTests.swift`, `ProfileError`, `Vec3`, `ChangeStreamTests.swift`, `ProgressSink`, `Foundation`, `Testing`, `Cutter`, `Implementation for Foundation`, `CutterGeometry`, `Sendable`, `FakeFileSystem`, `String`, `MaterialBand`?**
+  _High betweenness centrality (0.020) - this node is a cross-community bridge._
 - **Should `common.sh` be split into smaller, more focused modules?**
   _Cohesion score 0.11470985155195682 - nodes in this community are weakly interconnected._

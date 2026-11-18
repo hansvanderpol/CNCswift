@@ -1,6 +1,8 @@
 import Foundation
 
-public struct CutterID: Hashable, Sendable, Codable, ExpressibleByStringLiteral, CustomStringConvertible {
+public struct CutterID: Hashable, Sendable, Codable, ExpressibleByStringLiteral,
+    CustomStringConvertible
+{
     public let rawValue: String
 
     public init(_ rawValue: String) {
@@ -20,7 +22,7 @@ public enum CutterType: String, CaseIterable, Sendable, Codable, Equatable {
     case vBit
 }
 
-public struct Cutter: Equatable, Sendable {
+public struct Cutter: Codable, Equatable, Sendable {
     public let id: CutterID
     public let name: String
     public let type: CutterType

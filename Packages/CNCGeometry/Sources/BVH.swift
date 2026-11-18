@@ -73,7 +73,8 @@ public struct BVH: Sendable {
 
     private static func query(node: Node, x: Double, y: Double, highest: inout Double?) {
         let bounds = node.bounds
-        guard x >= bounds.min.x && x <= bounds.max.x && y >= bounds.min.y && y <= bounds.max.y else {
+        guard x >= bounds.min.x && x <= bounds.max.x && y >= bounds.min.y && y <= bounds.max.y
+        else {
             return
         }
         if let current = highest, bounds.max.z <= current {

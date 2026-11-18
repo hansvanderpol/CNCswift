@@ -73,7 +73,8 @@ private func material(
         try MaterialValidator.validate(material(name: "MDF"), against: Presets.all)
     }
     #expect(throws: MaterialValidationError.duplicateIdentifier) {
-        try MaterialValidator.validate(material(id: "user-1", name: "Different oak"), against: [user])
+        try MaterialValidator.validate(
+            material(id: "user-1", name: "Different oak"), against: [user])
     }
 }
 
