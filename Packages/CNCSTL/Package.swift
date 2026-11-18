@@ -8,6 +8,10 @@ let package = Package(
     products: [
         .library(name: "CNCSTL", targets: ["CNCSTL"])
     ],
+    dependencies: [
+        .package(path: "../CNCDiagnostics"),
+        .package(path: "../CNCGeometry"),
+    ],
     targets: [
         .target(
             name: "CNCSTL",
@@ -16,7 +20,11 @@ let package = Package(
         ),
         .testTarget(
             name: "CNCSTLTests",
-            dependencies: ["CNCSTL"],
+            dependencies: [
+                "CNCSTL",
+                .product(name: "CNCDiagnostics", package: "CNCDiagnostics"),
+                .product(name: "CNCGeometry", package: "CNCGeometry"),
+            ],
             path: "Tests",
             swiftSettings: [.treatAllWarnings(as: .error)]
         ),

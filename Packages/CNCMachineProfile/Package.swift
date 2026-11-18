@@ -12,6 +12,7 @@ let package = Package(
         .target(
             name: "CNCMachineProfile",
             path: "Sources",
+            resources: [.process("Resources")],
             swiftSettings: [.treatAllWarnings(as: .error)]
         ),
         .testTarget(

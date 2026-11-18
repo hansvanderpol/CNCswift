@@ -8,15 +8,27 @@ let package = Package(
     products: [
         .library(name: "CNCCuttersStore", targets: ["CNCCuttersStore"])
     ],
+    dependencies: [
+        .package(path: "../CNCCutters"),
+        .package(path: "../CNCStorage"),
+    ],
     targets: [
         .target(
             name: "CNCCuttersStore",
+            dependencies: [
+                .product(name: "CNCCutters", package: "CNCCutters"),
+                .product(name: "CNCStorage", package: "CNCStorage"),
+            ],
             path: "Sources",
             swiftSettings: [.treatAllWarnings(as: .error)]
         ),
         .testTarget(
             name: "CNCCuttersStoreTests",
-            dependencies: ["CNCCuttersStore"],
+            dependencies: [
+                "CNCCuttersStore",
+                .product(name: "CNCCutters", package: "CNCCutters"),
+                .product(name: "CNCStorage", package: "CNCStorage"),
+            ],
             path: "Tests",
             swiftSettings: [.treatAllWarnings(as: .error)]
         ),
