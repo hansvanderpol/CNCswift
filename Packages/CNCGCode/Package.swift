@@ -14,6 +14,7 @@ let package = Package(
         .package(path: "../CNCGeometry"),
         .package(path: "../CNCMachineProfile"),
         .package(path: "../CNCMaterials"),
+        .package(path: "../CNCStorage"),
         .package(path: "../CNCToolpath"),
     ],
     targets: [
@@ -24,6 +25,7 @@ let package = Package(
                 .product(name: "CNCDiagnostics", package: "CNCDiagnostics"),
                 .product(name: "CNCMachineProfile", package: "CNCMachineProfile"),
                 .product(name: "CNCMaterials", package: "CNCMaterials"),
+                .product(name: "CNCStorage", package: "CNCStorage"),
                 .product(name: "CNCToolpath", package: "CNCToolpath"),
             ],
             path: "Sources",
@@ -38,6 +40,7 @@ let package = Package(
                 .product(name: "CNCGeometry", package: "CNCGeometry"),
                 .product(name: "CNCMachineProfile", package: "CNCMachineProfile"),
                 .product(name: "CNCMaterials", package: "CNCMaterials"),
+                .product(name: "CNCStorage", package: "CNCStorage"),
                 .product(name: "CNCToolpath", package: "CNCToolpath"),
             ],
             path: "Tests",
