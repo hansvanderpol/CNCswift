@@ -9,9 +9,11 @@ let package = Package(
         .library(name: "CNCSimulation", targets: ["CNCSimulation"])
     ],
     dependencies: [
+        .package(path: "../CNCCutters"),
         .package(path: "../CNCDiagnostics"),
         .package(path: "../CNCGeometry"),
         .package(path: "../CNCMachineProfile"),
+        .package(path: "../CNCMaterials"),
         .package(path: "../CNCToolpath"),
         .package(path: "../CNCValidation"),
     ],
@@ -32,9 +34,11 @@ let package = Package(
             name: "CNCSimulationTests",
             dependencies: [
                 "CNCSimulation",
+                .product(name: "CNCCutters", package: "CNCCutters"),
                 .product(name: "CNCDiagnostics", package: "CNCDiagnostics"),
                 .product(name: "CNCGeometry", package: "CNCGeometry"),
                 .product(name: "CNCMachineProfile", package: "CNCMachineProfile"),
+                .product(name: "CNCMaterials", package: "CNCMaterials"),
                 .product(name: "CNCToolpath", package: "CNCToolpath"),
                 .product(name: "CNCValidation", package: "CNCValidation"),
             ],

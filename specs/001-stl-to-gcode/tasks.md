@@ -198,13 +198,13 @@ Do not silently rewrite `spec.md` while implementing. The clarified spec, `plan.
 
 ### Tests for User Story 3 (write first; they must fail)
 
-- [ ] T089 [P] [US3] Z-map tests: cutting moves lower the heightmap, rapids do not, and roughing plus finishing produce the expected depths (FR-061, FR-062, FR-063) — `Packages/CNCSimulation/Tests/ZMapTests.swift`
-- [ ] T090 [P] [US3] Preview-mesh tests for deterministic vertices and normals from a known heightmap (FR-061) — `Packages/CNCSimulation/Tests/PreviewMeshTests.swift`
-- [ ] T091 [P] [US3] Violation-surfacing tests asserting envelope and limit findings are named before writing and that a violation prevents commit (FR-064, FR-065) — `Packages/CNCSimulation/Tests/ViolationsTests.swift`
-- [ ] T092 [P] [US3] Progress and cancellation tests asserting a cancelled simulation is reported as cancelled, not failed (FR-066, FR-069) — `Packages/CNCSimulation/Tests/CancellationTests.swift`
-- [ ] T093 [P] [US3] Identity test proving simulation consumes the exact `ParsedProgram` returned by validation, not an emitter-side toolpath (FR-065) — `Packages/CNCSimulation/Tests/ProgramIdentityTests.swift`
-- [ ] T094 [P] [US3] Commit-gate test proving no file exists after `run`, no file after a blocked or cancelled simulation, and a file only after `commit` with preview shown and findings acknowledged (FR-064, FR-066, FR-069, SC-011, clarification Q6) — `Packages/CNCPipeline/Tests/CommitTests.swift`
-- [ ] T095 [P] [US3] Render-time test recording preview latency for all five reference STL fixtures and asserting 5/5 fixtures render within five seconds, because 95% of the five-fixture reference set requires five passes (SC-012, clarification Q5) — `Packages/CNCSimulation/Tests/PreviewPerformanceTests.swift`
+- [X] T089 [P] [US3] Z-map tests: cutting moves lower the heightmap, rapids do not, and roughing plus finishing produce the expected depths (FR-061, FR-062, FR-063) — `Packages/CNCSimulation/Tests/ZMapTests.swift`
+- [X] T090 [P] [US3] Preview-mesh tests for deterministic vertices and normals from a known heightmap (FR-061) — `Packages/CNCSimulation/Tests/PreviewMeshTests.swift`
+- [X] T091 [P] [US3] Violation-surfacing tests asserting envelope and limit findings are named before writing and that a violation prevents commit (FR-064, FR-065) — `Packages/CNCSimulation/Tests/ViolationsTests.swift`
+- [X] T092 [P] [US3] Progress and cancellation tests asserting a cancelled simulation is reported as cancelled, not failed (FR-066, FR-069) — `Packages/CNCSimulation/Tests/CancellationTests.swift`
+- [X] T093 [P] [US3] Identity test proving simulation consumes the exact `ParsedProgram` returned by validation, not an emitter-side toolpath (FR-065) — `Packages/CNCSimulation/Tests/ProgramIdentityTests.swift`
+- [X] T094 [P] [US3] Commit-gate test proving no file exists after `run`, no file after a blocked or cancelled simulation, and a file only after `commit` with preview shown and findings acknowledged (FR-064, FR-066, FR-069, SC-011, clarification Q6) — `Packages/CNCPipeline/Tests/CommitTests.swift`
+- [X] T095 [P] [US3] Render-time test recording preview latency for all five reference STL fixtures and asserting 5/5 fixtures render within five seconds, because 95% of the five-fixture reference set requires five passes (SC-012, clarification Q5) — `Packages/CNCSimulation/Tests/PreviewPerformanceTests.swift`
 
 ### Implementation for User Story 3
 
