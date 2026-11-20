@@ -236,7 +236,9 @@ public struct ValidationRules: Sendable {
         let m5Line = commands.first { command in
             GCodeLexer.words(in: command.text).first?.canonical == "M5"
         }?.lineNumber
-        let originLine = commands.first { command in
+        // The final origin return belongs to the stop block. Raster passes legitimately rapid
+        // through X0 Y0 with the spindle running, so the first such move is not the origin return.
+        let originLine = commands.last { command in
             let words = GCodeLexer.words(in: command.text)
             guard words.contains(where: { $0.canonical == "G0" }) else { return false }
             return words.contains { $0.letter == "X" && $0.value == 0 }

@@ -11,7 +11,7 @@ and the named package suites; desktop-only observations are marked pending rathe
 
 | Scenario | Evidence | Result |
 |---|---|---|
-| VS-1 — STL to `.nc` happy path | `CNCGCode` golden/header/emitter tests, `CNCPipeline` pipeline and commit-gate tests, `CNCValidation` rule tests | **BLOCKED end to end** — see finding below; all component tests pass |
+| VS-1 — STL to `.nc` happy path | `CNCGCode` golden/header/emitter tests, `CNCPipeline` pipeline and commit-gate tests, `CNCValidation` rule tests, `generatedProgramFromAReferenceFixturePassesValidation` (T119) | **PASS (automated)** — see resolution below; GUI file-picker walkthrough is a desktop step |
 | VS-2 — determinism | `Packages/CNCGCode/Tests/DeterminismTests.swift` | PASS (automated) |
 | VS-3 — rejection, not repair | `CNCSTL` decode tests, `CNCToolpath` preflight tests, `CNCMaterials` preset/resolution tests | PASS (automated) |
 | VS-4 — start/stop block integrity | `CNCValidation` parser and rule tests | PASS (automated) |
@@ -22,16 +22,19 @@ and the named package suites; desktop-only observations are marked pending rathe
 | VS-9 — material band has no overlap | `CNCMaterials/Tests/ResolutionTests.swift`, `MainScreenUI` blocked-state tests | PASS (automated) |
 | VS-10 — feature smaller than cutter | `CNCToolpath/Tests/FeatureTests.swift` | PASS (automated) |
 
-## VS-1 blocker found during this wave
+## VS-1 blocker found and resolved (T119)
 
-Generating from a real reference STL places the cutter-radius footprint at negative X/Y
-(`G0 X-3.000 Y-3.000`), which validation rejects as an envelope violation (2,715 findings on the
-200k fixture). The committed golden files start at `X10.000 Y10.000`, so the component tests do not
-exercise this path. Details and timings are in `performance-evidence.md`.
+Generating from a real reference STL placed the cutter-radius footprint at negative X/Y
+(`G0 X-3.000 Y-3.000`), which validation rejected as an envelope violation (2,715 findings on the
+200k fixture). The committed golden files start at `X10.000 Y10.000`, so the component tests did not
+exercise that path. Details and timings are in `performance-evidence.md`.
 
-VS-1 therefore cannot be recorded as an end-to-end pass until either the job placement is corrected
-by the planner/preflight or the operator places the model inside the stock with at least one cutter
-radius of margin. This is a follow-up task, not a silently accepted regression.
+T119 clips the swept region to the stock and machine envelope in `Footprint.make` (FR-038) and
+corrects `spindle-before-origin` to inspect the final origin return rather than the first raster
+rapid through X0 Y0. Regression tests cover an origin-placed toolpath, a program generated from
+`relief-demo-binary.stl`, and raster rapids through the origin. The SC-001 benchmark now reports
+`findings=0` and the generated program has no validation errors. The GUI file-picker walkthrough
+still needs a desktop observation; the automated VS-1 path is unblocked.
 
 ## SC-006 — timed empty-library first file (T113)
 

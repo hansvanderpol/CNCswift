@@ -235,11 +235,21 @@ Do not silently rewrite `spec.md` while implementing. The clarified spec, `plan.
 - [X] T111 [P] Record cutting-experience review sign-off for the four preset bands, or keep `Fixtures/materials/README.md` marked provisional and block treating it as certified cutting data (research D11) — `Fixtures/materials/README.md` (2026-11-20 decision: no physical review performed; bands stay provisional)
 - [X] T112 [P] Benchmark on a 200,000-triangle fixture: decode plus generation under five minutes and preview within five seconds for all five fixtures in the current reference set (SC-001, SC-012) — `Fixtures/stl/`, `Packages/CNCGeometry/Sources/` (evidence: `specs/001-stl-to-gcode/performance-evidence.md`; harness: `Packages/CNCPipeline/Tests/BenchmarkTests.swift`)
 - [ ] T113 [P] Record SC-006 and SC-009 validation evidence from quickstart scenarios, including timed empty-library first-file and keyboard-only completion results (SC-006, SC-009) — `specs/001-stl-to-gcode/checklists/requirements.md` (automated evidence recorded in `validation-evidence.md`; checklist markers left untouched as a read-only gate; human keyboard/VoiceOver results still owed)
-- [X] T114 Run all ten quickstart validation scenarios (VS-1 through VS-10) and record pass/fail evidence (SC-001 through SC-013) — `specs/001-stl-to-gcode/quickstart.md` (pass/fail table in `validation-evidence.md`; VS-1 blocked by the footprint defect recorded in `performance-evidence.md`)
+- [X] T114 Run all ten quickstart validation scenarios (VS-1 through VS-10) and record pass/fail evidence (SC-001 through SC-013) — `specs/001-stl-to-gcode/quickstart.md` (pass/fail table in `validation-evidence.md`; VS-1 automated path unblocked by T119)
 - [ ] T115 Confirm the first bundle build is ad-hoc signed and sandboxed: run `codesign -dvv .build/CNCswift.app` and `codesign -d --entitlements :- .build/CNCswift.app`, assert `Signature=adhoc` plus the sandbox entitlement with only the required file access, then `open .build/CNCswift.app` and verify user-selected file access; fix launch failures without dropping the entitlement (FR-073, FR-075, FR-076, constitution v4.3.0) — `Scripts/make-app.sh`, `App/Resources/CNCswift.entitlements` (signature, entitlements and launch verified in `bundle-verification.md`; user-selected file-picker check still owed)
 - [X] T116 [P] Add DocC comments to every public declaration across all sixteen packages, covering preconditions, thrown errors, and concurrency expectations; add a gate that fails when a `public` declaration lacks an immediately preceding DocC comment — `Packages/*/Sources/**/*.swift`, `Scripts/ci.sh` (gate: `Scripts/check-docc.py`, 98 shipping source files checked)
 - [X] T117 Final gates: format lint clean, zero build warnings, all package tests green, and DocC gate green through `Scripts/ci.sh` — `Scripts/ci.sh` (2026-11-20: exit 0, 16/16 suites green, DocC PASS; only pre-existing CLT framework search-path linker warnings remain)
 - [X] T118 Commit after each logical group in small pull requests that state the principles touched; never merge with failing or disabled tests or skipped concurrency checks (constitution, Development Workflow) — `.github/PULL_REQUEST_TEMPLATE.md` (template added; wave committed on `main` at the user's direction)
+
+---
+
+## Phase 7: Follow-up — VS-1 footprint defect (completed)
+
+**Purpose**: Remove the end-to-end blocker found by the SC-001 benchmark without weakening the envelope rule or accepting an uncommittable program.
+
+- [X] T119 [P] Clip the model-footprint-plus-one-radius region to the stock and machine envelope so an origin-placed model produces committable coordinates, and make `spindle-before-origin` inspect the final origin return instead of a raster rapid through X0 Y0; add regression tests for an origin-placed toolpath, a program generated from a reference STL, and raster rapids through the origin (FR-025, FR-038, FR-064, SC-003, VS-1) — `Packages/CNCToolpath/Sources/Footprint.swift`, `Packages/CNCToolpath/Tests/PlannerTests.swift`, `Packages/CNCValidation/Sources/Rules.swift`, `Packages/CNCValidation/Tests/RuleTests.swift`, `Packages/CNCPipeline/Tests/BenchmarkTests.swift`
+
+**Checkpoint**: `Scripts/ci.sh` green; the SC-001 benchmark reports `findings=0` for the 200k fixture, and a program generated from `relief-demo-binary.stl` validates with no errors.
 
 ---
 
@@ -335,11 +345,11 @@ Every requirement is assigned to at least one task.
 | FR-013, FR-014, FR-015, FR-016 | T012, T026, T109 |
 | FR-017, FR-018 | T012, T026, T043, T044, T045, T057, T059, T109 |
 | FR-019, FR-020, FR-021 | T040, T047, T057 |
-| FR-022, FR-023, FR-024, FR-025 | T012, T017, T041, T043, T047, T049, T058, T071 |
+| FR-022, FR-023, FR-024, FR-025 | T012, T017, T041, T043, T047, T049, T058, T071, T119 |
 | FR-026, FR-027, FR-028, FR-029 | T040, T042, T045, T046, T047, T052, T057, T059, T060, T068, T074 |
 | FR-030, FR-031 | T012, T026, T044, T047, T108 |
 | FR-032, FR-033, FR-034, FR-035, FR-036 | T048, T062, T063, T064 |
-| FR-037, FR-038, FR-039, FR-041 | T013, T027, T048, T049, T050, T056, T064, T065 |
+| FR-037, FR-038, FR-039, FR-041 | T013, T027, T048, T049, T050, T056, T064, T065, T119 |
 | FR-040 | T017, T048, T055, T056, T071, T073 |
 | FR-042, FR-044, FR-045, FR-046, FR-047, FR-048 | T015, T024, T029, T077, T083, T084 |
 | FR-043, FR-050 | T024, T054, T070 |
@@ -348,7 +358,7 @@ Every requirement is assigned to at least one task.
 | FR-055, FR-056, FR-057 | T002, T069, T071, T080, T082, T087 |
 | FR-058, FR-059, FR-060 | T021, T025, T037, T079, T085, T086 |
 | FR-061, FR-062, FR-063 | T089, T096, T099, T100 |
-| FR-064, FR-065, FR-066 | T091, T092, T093, T098, T101, T102, T103 |
+| FR-064, FR-065, FR-066 | T091, T092, T093, T098, T101, T102, T103, T119 |
 | FR-067, FR-068, FR-069 | T014, T018, T019, T033, T034, T053, T073, T092 |
 | FR-070, FR-071, FR-072 | T087, T100, T104, T105, T106 |
 | FR-073, FR-074, FR-075, FR-076 | T006, T007, T107, T115 |
@@ -357,7 +367,7 @@ Every requirement is assigned to at least one task.
 | FR-081 | T040, T041, T054, T057 |
 | FR-082 | T043, T047, T057 |
 | SC-001 | T112, T114 |
-| SC-002, SC-003 | T040, T047, T074, T114 |
+| SC-002, SC-003 | T040, T047, T074, T114, T119 |
 | SC-004 | T014, T015, T016, T049, T050, T114 |
 | SC-005 | T042, T114 |
 | SC-006 | T078, T113, T114 |

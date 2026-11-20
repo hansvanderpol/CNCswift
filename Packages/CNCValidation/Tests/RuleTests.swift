@@ -186,6 +186,30 @@ private func program(_ text: String, moves: [ParsedMove] = []) -> ParsedProgram 
         })
 }
 
+@Test func rasterRapidsThroughOriginBeforeTheStopBlockAreNotOriginReturns() {
+    let text = """
+        G21
+        G90
+        G94
+        G00 Z10.0
+        M3 S8000
+        G0 X0 Y0
+        G1 Z-1.000 F600.000
+        G0 Z10.000
+        G0 X0 Y0
+        G90
+        G00 Z15.0
+        M5
+        G00 X0 Y0
+        M30
+        """
+    let findings = ValidationRules().evaluate(program(text), profile: profile)
+    #expect(
+        !findings.contains { $0.ruleIdentifier == "spindle-before-origin" },
+        "a raster rapid through the origin is not the final origin return"
+    )
+}
+
 @Test func forbiddenWordsAndSettingsAreRejected() {
     let tokens = ["$", "M4", "$32", "G93", "G43.1", "G49"]
     for token in tokens {

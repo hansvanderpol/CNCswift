@@ -168,8 +168,7 @@ Full pass/fail evidence for VS-1 through VS-10 is recorded in
 - VS-5 passes its automated five-fixture timing check; visual inspection is a desktop step.
 - VS-8 passes its automated cancellation and static offline checks; full-session network sampling
   is a desktop step.
-- VS-1 is **blocked end to end**: real generation places the cutter margin outside the envelope.
-  See [performance-evidence.md](./performance-evidence.md) for the measurement and the finding.
+- VS-1 passes through automated suites after T119: a program generated from a reference STL validates with zero findings and zero errors. The GUI file-picker walkthrough remains a desktop step. See [performance-evidence.md](./performance-evidence.md) for the measurement and the resolved finding.
 
 Performance evidence lives in [performance-evidence.md](./performance-evidence.md), bundle signing
 and entitlement verification in [bundle-verification.md](./bundle-verification.md), and the

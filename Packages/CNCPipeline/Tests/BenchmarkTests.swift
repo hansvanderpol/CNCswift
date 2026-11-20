@@ -186,6 +186,20 @@ private enum BenchmarkSupport {
     #expect(total < .seconds(300), "SC-001 budget is five minutes for decode plus generation")
 }
 
+@Test func generatedProgramFromAReferenceFixturePassesValidation() async throws {
+    let model = "relief-demo-binary.stl"
+    let document = try await BenchmarkSupport.prepared(model)
+    let (program, _) = try await BenchmarkSupport.generate(document, model: model)
+    let report = GRBLValidator().validate(program.text, profile: BenchmarkSupport.profile)
+
+    let envelopeFindings = report.findings.filter { $0.ruleIdentifier == "envelope" }
+    #expect(
+        envelopeFindings.isEmpty,
+        "a generated program must not leave the envelope, got \(envelopeFindings.count) findings"
+    )
+    #expect(!report.hasErrors, "a real reference fixture must produce a committable program")
+}
+
 @Test func benchmarkPreviewForAllFiveReferenceModels() async throws {
     let clock = ContinuousClock()
     let simulator = ZMapSimulator(resolution: 2)

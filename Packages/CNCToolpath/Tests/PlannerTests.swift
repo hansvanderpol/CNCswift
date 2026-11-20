@@ -171,3 +171,36 @@ private let epsilon = 1e-6
         Issue.record("expected invalidAllowance, got \(error)")
     }
 }
+
+@Test func aModelAtTheMachineOriginStaysInsideTheStock() async throws {
+    let stock = ToolpathFixture.stock
+    let bounds = ToolpathFixture.modelBounds
+    let job = try ToolpathFixture.job(
+        mesh: ToolpathFixture.flatTopMesh(bounds: bounds),
+        modelBounds: bounds,
+        stock: stock
+    )
+
+    let toolpath = try await ToolpathPlanner().plan(
+        job,
+        profile: ToolpathFixture.profile,
+        progress: ToolpathFixture.progressSink()
+    )
+
+    for move in toolpath.moves {
+        for point in [move.from, move.to] {
+            #expect(
+                point.x >= -epsilon && point.x <= stock.width + epsilon,
+                "X \(point.x) leaves the \(stock.width) mm stock"
+            )
+            #expect(
+                point.y >= -epsilon && point.y <= stock.depth + epsilon,
+                "Y \(point.y) leaves the \(stock.depth) mm stock"
+            )
+        }
+    }
+    #expect(toolpath.bounds.min.x >= -epsilon)
+    #expect(toolpath.bounds.min.y >= -epsilon)
+    #expect(toolpath.bounds.max.x <= stock.width + epsilon)
+    #expect(toolpath.bounds.max.y <= stock.depth + epsilon)
+}
