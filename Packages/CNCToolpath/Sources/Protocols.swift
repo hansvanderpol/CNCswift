@@ -75,8 +75,14 @@ public struct JobSettings: Sendable, Equatable {
 
     public let stock: StockBlank
 
-    /// The stored cutter this job references; attributes come from the cutter value handed to
-    /// the planner, never from a default (FR-043, FR-049).
+    /// The stored cutter this job references, resolved from the library before planning.
+    ///
+    /// `cutterID` remains the stable identity used by headers and library events; `cutter` carries
+    /// the authoritative dimensions so the planner never invents or defaults geometry (FR-043,
+    /// FR-049).
+    public let cutter: Cutter
+
+    /// The stable identifier of `cutter`.
     public let cutterID: CutterID
 
     /// The preset or user material this job references.
@@ -110,7 +116,7 @@ public struct JobSettings: Sendable, Equatable {
         mesh: Mesh,
         modelBounds: AABB,
         stock: StockBlank,
-        cutterID: CutterID,
+        cutter: Cutter,
         materialID: String,
         effective: EffectiveCuttingValues,
         stepover: Double,
@@ -124,7 +130,8 @@ public struct JobSettings: Sendable, Equatable {
         self.mesh = mesh
         self.modelBounds = modelBounds
         self.stock = stock
-        self.cutterID = cutterID
+        self.cutter = cutter
+        self.cutterID = cutter.id
         self.materialID = materialID
         self.effective = effective
         self.stepover = stepover

@@ -1,10 +1,21 @@
+import MainScreenUI
 import SwiftUI
 
 @main
 struct CNCswiftApp: App {
-    var body: some SwiftUI.Scene {
+    private let composition = AppComposition()
+
+    var body: some Scene {
         WindowGroup {
-            Text("CNCswift")
+            MainScreen(
+                model: composition.model,
+                cutters: composition.cutters,
+                materials: composition.materials,
+                profile: composition.profile
+            )
+            .task {
+                await composition.loadLibraries()
+            }
         }
     }
 }

@@ -64,7 +64,7 @@ enum EmitterFixture {
             ]),
             modelBounds: modelBounds,
             stock: stock,
-            cutterID: cutterID,
+            cutter: cutter,
             materialID: material.id,
             effective: try effectiveValues(),
             stepover: 2.4,

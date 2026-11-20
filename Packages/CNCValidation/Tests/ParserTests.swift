@@ -7,15 +7,15 @@ private let profile = TTC450Pro.profile
 
 @Test func parsesBasicGRBLSubsetAndTracksModalState() {
     let text = """
-    G21
-    G90
-    G94
-    G0 Z10.000
-    G1 X10.000 Y5.000 F600.000
-    X20.000
-    G0 Z15.000
-    M30
-    """
+        G21
+        G90
+        G94
+        G0 Z10.000
+        G1 X10.000 Y5.000 F600.000
+        X20.000
+        G0 Z15.000
+        M30
+        """
 
     let result = GRBLParser().parse(text, profile: profile)
 
@@ -48,16 +48,20 @@ private let profile = TTC450Pro.profile
 
 @Test func reportsUnknownWords() {
     let text = """
-    G21
-    G90
-    G999 X1.000
-    Q10
-    M30
-    """
+        G21
+        G90
+        G999 X1.000
+        Q10
+        M30
+        """
 
     let result = GRBLParser().parse(text, profile: profile)
 
-    #expect(result.findings.contains { $0.severity == .error && $0.message.localizedCaseInsensitiveContains("unknown") || $0.ruleIdentifier.localizedCaseInsensitiveContains("unknown") })
+    #expect(
+        result.findings.contains {
+            $0.severity == .error && $0.message.localizedCaseInsensitiveContains("unknown")
+                || $0.ruleIdentifier.localizedCaseInsensitiveContains("unknown")
+        })
     #expect(result.findings.contains { $0.lineNumber == 3 })
 }
 
@@ -67,7 +71,9 @@ private let profile = TTC450Pro.profile
 
     let result = GRBLParser().parse(text, profile: profile)
 
-    let finding = result.findings.first { $0.ruleIdentifier == "line-length" || $0.message.localizedCaseInsensitiveContains("80") }
+    let finding = result.findings.first {
+        $0.ruleIdentifier == "line-length" || $0.message.localizedCaseInsensitiveContains("80")
+    }
     #expect(finding != nil)
     #expect(finding?.severity == .error)
     #expect(finding?.lineNumber == 2)
@@ -75,12 +81,12 @@ private let profile = TTC450Pro.profile
 
 @Test func tracksModalStateAcrossRapidAndCutTransitions() {
     let text = """
-    G90
-    G1 X0.000 Y0.000 Z-1.000 F500.000
-    G0 Z10.000
-    X5.000 Y5.000
-    G1 Z-1.000
-    """
+        G90
+        G1 X0.000 Y0.000 Z-1.000 F500.000
+        G0 Z10.000
+        X5.000 Y5.000
+        G1 Z-1.000
+        """
 
     let result = GRBLParser().parse(text, profile: profile)
 

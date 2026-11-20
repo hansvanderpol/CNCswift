@@ -128,7 +128,7 @@ private func contractCutter(name: String = "6mm flat") -> Cutter {
         mesh: mesh,
         modelBounds: bounds,
         stock: StockBlank(width: 200, depth: 150, height: 30),
-        cutterID: selected.id,
+        cutter: selected,
         materialID: material.id,
         effective: effective.confirming(),
         stepover: 2.4,

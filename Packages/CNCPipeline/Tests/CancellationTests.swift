@@ -179,7 +179,7 @@ private func cancellationRequest(destination: URL) throws -> GenerationRequest {
         mesh: mesh,
         modelBounds: bounds,
         stock: StockBlank(width: 200, depth: 150, height: 30),
-        cutterID: cutter.id,
+        cutter: cutter,
         materialID: material.id,
         effective: effective,
         stepover: 2.4,

@@ -3,25 +3,53 @@ import CNCGeometry
 import CNCMachineProfile
 import Foundation
 
-/// Produces the ordered roughing and finishing moves for one job.
+/// Produces the ordered roughing and finishing moves for one job (T062–T064).
 ///
-/// The layered roughing, raster finishing, footprint restriction, and move sequencing are added by
-/// tasks T062-T064. The type exists now so the test-first planner contract compiles and fails for
-/// the missing behaviour rather than for a missing symbol.
+/// The planner is pure: it reads only the resolved values in `JobSettings`, the injected profile,
+/// and progress/cancellation. Asset lookup and the full stock-reach gate belong to the pipeline,
+/// which calls `Preflight.check` before this type is used.
 public struct ToolpathPlanner: ToolpathPlanning, Sendable {
     public init() {}
 
+    /// Plans one deterministic toolpath.
+    ///
+    /// - Parameters:
+    ///   - job: The confirmed job with its resolved cutter value.
+    ///   - profile: The machine profile supplying clearance height.
+    ///   - progress: The sink used for cancellation and stage progress.
+    /// - Throws: `PlanningError` for invalid inputs or `CancellationError` when cancelled.
+    /// - Returns: Roughing passes followed by finishing raster passes at the effective feed.
     public func plan(
         _ job: JobSettings,
         profile: MachineProfile,
         progress: ProgressSink
     ) async throws -> Toolpath {
-        _ = (job, profile, progress)
-        let origin = Vec3(x: 0, y: 0, z: 0)
+        let report = try Preflight.checkPlanningInputs(
+            job,
+            cutter: job.cutter,
+            profile: profile
+        )
+        _ = report
+
+        try Task.checkCancellation()
+        guard !progress.isCancelled() else { throw CancellationError() }
+
+        let footprint = try Footprint.make(job: job, profile: profile)
+        let roughing = try RoughingPlanner.moves(
+            job: job,
+            footprint: footprint,
+            progress: progress
+        )
+        let finishing = try FinishingPlanner.moves(
+            job: job,
+            footprint: footprint,
+            progress: progress
+        )
+
         return Toolpath(
-            moves: [],
-            feedRate: 0,
-            bounds: AABB(min: origin, max: origin)
+            moves: roughing + finishing,
+            feedRate: job.effective.feed,
+            bounds: footprint.bounds
         )
     }
 }

@@ -1,0 +1,21 @@
+# Swift Package Manager build output
+.build/
+.swiftpm/
+DerivedData/
+
+# Xcode / IDE state
+.idea/
+.vscode/
+*.xcuserstate
+xcuserdata/
+
+# Generated app bundles (assembled by Scripts/make-app.sh)
+*.app/
+
+# OS and editor noise
+.DS_Store
+Thumbs.db
+*.tmp
+*.swp
+*.log
+/graphify-out/

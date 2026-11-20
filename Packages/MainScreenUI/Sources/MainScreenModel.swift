@@ -3,14 +3,37 @@ import CNCMachineProfile
 import CNCMaterials
 import CNCToolpath
 import Foundation
+import Observation
 
 /// A reason generation is blocked on the main screen (FR-024, FR-037, FR-040, FR-080).
 public enum GenerationBlocker: String, Sendable, Equatable, Hashable {
+    case unconfirmedModel
+    case unconfirmedScale
     case unconfirmedEffectiveValues
     case unconfirmedJobSettings
     case unconfirmedRapidSetup
     case emptyMaterialOverlap
     case emptyCutterSelection
+
+    /// Text suitable for the pre-generation checklist; every blocker names the required action.
+    public var message: String {
+        switch self {
+        case .unconfirmedModel:
+            return "Confirm the model units and orientation."
+        case .unconfirmedScale:
+            return "Apply an explicit scale to convert file units to millimetres."
+        case .unconfirmedEffectiveValues:
+            return "Confirm the effective feed and spindle values."
+        case .unconfirmedJobSettings:
+            return "Confirm the suggested stepover, depth per pass, and finishing allowance."
+        case .unconfirmedRapidSetup:
+            return "Confirm the controller rapid-rate settings are applied."
+        case .emptyMaterialOverlap:
+            return "Choose a material whose bands overlap the machine limits."
+        case .emptyCutterSelection:
+            return "Choose a stored cutter."
+        }
+    }
 }
 
 /// A suggested job strategy that must be confirmed before it is applied (FR-037).
@@ -44,25 +67,70 @@ public struct JobSuggestion: Sendable, Equatable {
 }
 
 /// Suggests a starting job strategy without applying it (FR-037).
-///
-/// Full derivation is added by T073; this seam lets the confirmation test compile and fail first.
 public struct JobSuggestionEngine: Sendable {
     public init() {}
 
     /// Suggests values for `cutter` and `stock`; the caller must confirm them before use.
+    ///
+    /// The ratios are derived from the cutter's authoritative cutting extent, so changing the
+    /// selected cutter changes the suggestion without any stored default (FR-036, FR-049).
     public func suggestion(
         cutter: Cutter,
         stock: StockBlank,
         profile: MachineProfile
     ) -> JobSuggestion {
-        _ = (cutter, stock, profile)
-        return JobSuggestion(stepover: 0, maxDepthPerPass: 0, finishingAllowance: 0)
+        _ = profile
+        let extent = cutter.maxCuttingExtent
+        guard extent.isFinite, extent > 0, stock.height > 0 else {
+            return JobSuggestion(stepover: 0, maxDepthPerPass: 0, finishingAllowance: 0)
+        }
+        return JobSuggestion(
+            // 40% is written as an exact rational so a 6 mm cutter suggests 2.4 mm, not 2.4000000000000004 mm.
+            stepover: extent * 2 / 5,
+            maxDepthPerPass: min(extent / 3, cutter.cuttingLength, stock.height),
+            finishingAllowance: min(extent / 12, stock.height / 2)
+        )
     }
 }
 
-/// The main-screen state that gates one generation job.
+/// Mutable form state for the units confirmation sheet.
 ///
-/// Behaviour is added by T073; the state and seams exist so T054–T056 can pin the contract.
+/// It lives in the main-screen model because SwiftUI's `@State` macro is unavailable with the
+/// Command Line Tools toolchain; an `@Observable` object provides the same stable storage without a
+/// missing macro plugin.
+@Observable
+@MainActor
+public final class UnitsConfirmationDraft {
+    public var unitsAreMillimetres = false
+    public var orientationIsZUp = false
+    public var scaleText = ""
+
+    public init() {}
+}
+
+/// Mutable text state for the stock dimension fields.
+@Observable
+@MainActor
+public final class StockDraft {
+    public var width = "200"
+    public var depth = "150"
+    public var height = "30"
+
+    public init() {}
+}
+
+/// The outcome of one UI-initiated generation attempt.
+public enum MainScreenGenerationStatus: Sendable, Equatable {
+    case idle
+    case running
+    case ready
+    case blocked([String])
+    case cancelled
+    case failed(String)
+}
+
+/// The main-screen state that gates one generation job (FR-037, FR-040, FR-069).
+@Observable
 @MainActor
 public final class MainScreenModel {
     public private(set) var selectedCutterID: CutterID?
@@ -70,6 +138,32 @@ public final class MainScreenModel {
     public private(set) var appliedSuggestion: JobSuggestion?
     public private(set) var rapidRateConfirmed: Bool
     public private(set) var materialHasOverlap: Bool
+
+    public private(set) var selectedMaterialID: String?
+    public private(set) var stock: StockBlank
+    public private(set) var hasLoadedModel: Bool
+    public private(set) var modelFileName: String?
+    public private(set) var unitsConfirmed: Bool
+    public private(set) var orientationConfirmed: Bool
+    public private(set) var appliedScale: Double
+    public private(set) var scaleConfirmed: Bool
+    public private(set) var pendingSuggestion: JobSuggestion?
+    public let unitsDraft = UnitsConfirmationDraft()
+    public let stockDraft = StockDraft()
+    public private(set) var isUnitsSheetPresented = false
+    public private(set) var isFileImporterPresented = false
+    public private(set) var generationStatus: MainScreenGenerationStatus
+    public private(set) var progressCompleted: Int
+    public private(set) var progressTotal: Int
+    public private(set) var isCancellationRequested: Bool
+
+    /// Injected by the composition root; the UI never imports the pipeline package directly.
+    ///
+    /// These closures are main-actor isolated because the state they read and write belongs to the
+    /// main screen. They cross no actor boundary until they reach the pipeline actor.
+    public var generate: (@MainActor () async -> MainScreenGenerationStatus)?
+    public var cancel: (@MainActor () -> Void)?
+    public var loadModel: (@MainActor (URL) async -> Bool)?
 
     public init(
         selectedCutterID: CutterID? = nil,
@@ -80,9 +174,22 @@ public final class MainScreenModel {
     ) {
         self.selectedCutterID = selectedCutterID
         self.effectiveValues = effectiveValues
+        self.pendingSuggestion = suggestion
         self.appliedSuggestion = suggestion?.confirmed == true ? suggestion : nil
         self.rapidRateConfirmed = rapidRateConfirmed
         self.materialHasOverlap = materialHasOverlap
+        selectedMaterialID = nil
+        stock = StockBlank(width: 0, depth: 0, height: 0)
+        hasLoadedModel = false
+        modelFileName = nil
+        unitsConfirmed = false
+        orientationConfirmed = false
+        appliedScale = 1
+        scaleConfirmed = false
+        generationStatus = .idle
+        progressCompleted = 0
+        progressTotal = 0
+        isCancellationRequested = false
     }
 
     /// Selects a stored cutter by identifier; the library remains the source of truth (FR-060).
@@ -90,14 +197,30 @@ public final class MainScreenModel {
         selectedCutterID = id
     }
 
+    /// Clears a selection whose cutter was deleted from the persisted library (FR-060).
+    public func clearCutterSelection() {
+        selectedCutterID = nil
+    }
+
+    /// Stores prefilled, unconfirmed cutting values from material resolution (FR-079).
+    public func setEffectiveValues(_ values: EffectiveCuttingValues?) {
+        effectiveValues = values
+    }
+
     /// Records an explicit confirmation of resolved cutting values (FR-079).
     public func confirmEffectiveValues(_ values: EffectiveCuttingValues) {
         effectiveValues = values.confirming()
     }
 
+    /// Stores a suggested strategy without applying it (FR-037).
+    public func setSuggestion(_ suggestion: JobSuggestion) {
+        pendingSuggestion = suggestion
+    }
+
     /// Applies a job strategy only after the user confirms it (FR-037).
     public func applySuggestion(_ suggestion: JobSuggestion) {
         guard suggestion.confirmed else { return }
+        pendingSuggestion = suggestion
         appliedSuggestion = suggestion
     }
 
@@ -106,14 +229,122 @@ public final class MainScreenModel {
         rapidRateConfirmed = confirmed
     }
 
+    /// Selects a material and clears any stale effective-value confirmation (FR-008).
+    public func selectMaterial(_ id: String) {
+        selectedMaterialID = id
+        effectiveValues = nil
+    }
+
+    /// Updates the blank dimensions after explicit entry (FR-010).
+    public func updateStock(width: Double, depth: Double, height: Double) {
+        stock = StockBlank(width: width, depth: depth, height: height)
+    }
+
+    /// Records that a model was decoded and resets every model-specific confirmation (FR-005, FR-006).
+    public func markModelLoaded(fileName: String) {
+        hasLoadedModel = true
+        modelFileName = fileName
+        unitsConfirmed = false
+        orientationConfirmed = false
+        appliedScale = 1
+        scaleConfirmed = false
+    }
+
+    /// Clears the loaded model and its confirmations.
+    public func clearModel() {
+        hasLoadedModel = false
+        modelFileName = nil
+        unitsConfirmed = false
+        orientationConfirmed = false
+        appliedScale = 1
+        scaleConfirmed = false
+    }
+
+    /// Records unit and orientation confirmation from the dedicated sheet (FR-005).
+    public func confirmUnitsAndOrientation(units: Bool, orientation: Bool) {
+        unitsConfirmed = units
+        orientationConfirmed = orientation
+    }
+
+    /// Applies an explicit scale; no scale is inferred from a file (FR-006).
+    public func applyScale(_ scale: Double) {
+        guard scale.isFinite, scale > 0 else { return }
+        appliedScale = scale
+        scaleConfirmed = true
+    }
+
+    /// Records a generated material-resolution failure (FR-079).
+    public func setMaterialOverlap(_ hasOverlap: Bool) {
+        materialHasOverlap = hasOverlap
+    }
+
+    /// Controls the units sheet without a SwiftUI `@State` macro.
+    public func setUnitsSheetPresented(_ presented: Bool) {
+        isUnitsSheetPresented = presented
+    }
+
+    /// Controls the STL importer without a SwiftUI `@State` macro.
+    public func setFileImporterPresented(_ presented: Bool) {
+        isFileImporterPresented = presented
+    }
+
     /// Returns every currently blocking condition.
     public func blockers() -> [GenerationBlocker] {
-        []
+        var result: [GenerationBlocker] = []
+        if selectedCutterID == nil {
+            result.append(.emptyCutterSelection)
+        }
+        if !materialHasOverlap {
+            result.append(.emptyMaterialOverlap)
+        }
+        if effectiveValues?.confirmed != true {
+            result.append(.unconfirmedEffectiveValues)
+        }
+        if appliedSuggestion?.confirmed != true {
+            result.append(.unconfirmedJobSettings)
+        }
+        if !rapidRateConfirmed {
+            result.append(.unconfirmedRapidSetup)
+        }
+        if hasLoadedModel {
+            if !unitsConfirmed || !orientationConfirmed {
+                result.append(.unconfirmedModel)
+            }
+            if !scaleConfirmed {
+                result.append(.unconfirmedScale)
+            }
+        }
+        return result
     }
 
     /// Re-resolves the selected cutter identifier against the freshly loaded library (FR-060).
     public func resolvedCutter(in library: [Cutter]) -> Cutter? {
-        _ = (selectedCutterID, library)
-        return nil
+        guard let selectedCutterID else { return nil }
+        return library.first { $0.id == selectedCutterID }
+    }
+
+    /// Runs the injected write-free generation action (FR-069).
+    public func startGeneration() async {
+        guard blockers().isEmpty, let generate else { return }
+        generationStatus = .running
+        isCancellationRequested = false
+        generationStatus = await generate()
+    }
+
+    /// Reports stage progress from the injected generation action.
+    public func reportProgress(completed: Int, total: Int) {
+        progressCompleted = completed
+        progressTotal = total
+    }
+
+    /// Surfaces a composition or generation failure without changing confirmation state.
+    public func reportFailure(_ message: String) {
+        generationStatus = .failed(message)
+    }
+
+    /// Requests cancellation through the injected seam.
+    public func requestCancellation() {
+        isCancellationRequested = true
+        cancel?()
     }
 }

@@ -22,7 +22,11 @@ private func program(_ text: String, moves: [ParsedMove] = []) -> ParsedProgram 
             )
         ]
     )
-    #expect(ValidationRules().evaluate(inside, profile: profile).filter { $0.ruleIdentifier.contains("envelope") || $0.message.localizedCaseInsensitiveContains("envelope") }.isEmpty)
+    #expect(
+        ValidationRules().evaluate(inside, profile: profile).filter {
+            $0.ruleIdentifier.contains("envelope")
+                || $0.message.localizedCaseInsensitiveContains("envelope")
+        }.isEmpty)
 
     let outside = program(
         "G1 X460.001 Y0.000 Z0.000 F800.000",
@@ -37,7 +41,13 @@ private func program(_ text: String, moves: [ParsedMove] = []) -> ParsedProgram 
         ]
     )
     let findings = ValidationRules().evaluate(outside, profile: profile)
-    #expect(findings.contains { $0.severity == .error && ($0.message.localizedCaseInsensitiveContains("envelope") || $0.ruleIdentifier.localizedCaseInsensitiveContains("envelope") || $0.message.localizedCaseInsensitiveContains("460")) })
+    #expect(
+        findings.contains {
+            $0.severity == .error
+                && ($0.message.localizedCaseInsensitiveContains("envelope")
+                    || $0.ruleIdentifier.localizedCaseInsensitiveContains("envelope")
+                    || $0.message.localizedCaseInsensitiveContains("460"))
+        })
 }
 
 @Test func feedAboveCeilingAndSpindleOutsideRangeAreRejected() {
@@ -53,18 +63,39 @@ private func program(_ text: String, moves: [ParsedMove] = []) -> ParsedProgram 
             )
         ]
     )
-    #expect(ValidationRules().evaluate(overFeed, profile: profile).contains { $0.severity == .error && ($0.message.contains("800") || $0.ruleIdentifier.localizedCaseInsensitiveContains("feed")) })
+    #expect(
+        ValidationRules().evaluate(overFeed, profile: profile).contains {
+            $0.severity == .error
+                && ($0.message.contains("800")
+                    || $0.ruleIdentifier.localizedCaseInsensitiveContains("feed"))
+        })
 
     let badSpindle = program("M3 S4999\nM3 S8001")
     let spindleFindings = ValidationRules().evaluate(badSpindle, profile: profile)
-    #expect(spindleFindings.contains { $0.severity == .error && ($0.message.contains("4999") || $0.message.contains("5000") || $0.message.localizedCaseInsensitiveContains("spindle")) })
-    #expect(spindleFindings.contains { $0.severity == .error && ($0.message.contains("8001") || $0.message.contains("8000") || $0.message.localizedCaseInsensitiveContains("spindle")) })
+    #expect(
+        spindleFindings.contains {
+            $0.severity == .error
+                && ($0.message.contains("4999") || $0.message.contains("5000")
+                    || $0.message.localizedCaseInsensitiveContains("spindle"))
+        })
+    #expect(
+        spindleFindings.contains {
+            $0.severity == .error
+                && ($0.message.contains("8001") || $0.message.contains("8000")
+                    || $0.message.localizedCaseInsensitiveContains("spindle"))
+        })
 }
 
 @Test func feedWordOnRapidIsRejected() {
     let text = "G0 Z10.000 F800.000"
     let findings = ValidationRules().evaluate(program(text), profile: profile)
-    #expect(findings.contains { $0.severity == .error && ($0.ruleIdentifier.localizedCaseInsensitiveContains("rapid") || $0.message.localizedCaseInsensitiveContains("rapid") || $0.message.localizedCaseInsensitiveContains("F")) })
+    #expect(
+        findings.contains {
+            $0.severity == .error
+                && ($0.ruleIdentifier.localizedCaseInsensitiveContains("rapid")
+                    || $0.message.localizedCaseInsensitiveContains("rapid")
+                    || $0.message.localizedCaseInsensitiveContains("F"))
+        })
 }
 
 @Test func startAndStopBlockOrderAndFinalM30AreRequired() {
@@ -82,7 +113,13 @@ private func program(_ text: String, moves: [ParsedMove] = []) -> ParsedProgram 
         M30
         """
     )
-    #expect(ValidationRules().evaluate(good, profile: profile).filter { $0.severity == .error && ($0.ruleIdentifier.contains("block") || $0.ruleIdentifier.contains("order") || $0.message.localizedCaseInsensitiveContains("block") || $0.message.localizedCaseInsensitiveContains("M30")) }.isEmpty)
+    #expect(
+        ValidationRules().evaluate(good, profile: profile).filter {
+            $0.severity == .error
+                && ($0.ruleIdentifier.contains("block") || $0.ruleIdentifier.contains("order")
+                    || $0.message.localizedCaseInsensitiveContains("block")
+                    || $0.message.localizedCaseInsensitiveContains("M30"))
+        }.isEmpty)
 
     let badOrder = program(
         """
@@ -98,7 +135,8 @@ private func program(_ text: String, moves: [ParsedMove] = []) -> ParsedProgram 
         M30
         """
     )
-    #expect(ValidationRules().evaluate(badOrder, profile: profile).contains { $0.severity == .error })
+    #expect(
+        ValidationRules().evaluate(badOrder, profile: profile).contains { $0.severity == .error })
 
     let notFinal = program(
         """
@@ -115,24 +153,37 @@ private func program(_ text: String, moves: [ParsedMove] = []) -> ParsedProgram 
         G0 X1 Y1
         """
     )
-    #expect(ValidationRules().evaluate(notFinal, profile: profile).contains { $0.severity == .error && ($0.message.localizedCaseInsensitiveContains("M30") || $0.ruleIdentifier.localizedCaseInsensitiveContains("final") || $0.ruleIdentifier.localizedCaseInsensitiveContains("m30")) })
+    #expect(
+        ValidationRules().evaluate(notFinal, profile: profile).contains {
+            $0.severity == .error
+                && ($0.message.localizedCaseInsensitiveContains("M30")
+                    || $0.ruleIdentifier.localizedCaseInsensitiveContains("final")
+                    || $0.ruleIdentifier.localizedCaseInsensitiveContains("m30"))
+        })
 }
 
 @Test func spindleMustStopBeforeOriginReturn() {
     let text = """
-    G21
-    G90
-    G94
-    G00 Z10.0
-    M3 S8000
-    G90
-    G00 Z15.0
-    G00 X0 Y0
-    M5
-    M30
-    """
+        G21
+        G90
+        G94
+        G00 Z10.0
+        M3 S8000
+        G90
+        G00 Z15.0
+        G00 X0 Y0
+        M5
+        M30
+        """
     let findings = ValidationRules().evaluate(program(text), profile: profile)
-    #expect(findings.contains { $0.severity == .error && ($0.message.localizedCaseInsensitiveContains("M5") || $0.message.localizedCaseInsensitiveContains("origin") || $0.ruleIdentifier.localizedCaseInsensitiveContains("origin") || $0.ruleIdentifier.localizedCaseInsensitiveContains("spindle")) })
+    #expect(
+        findings.contains {
+            $0.severity == .error
+                && ($0.message.localizedCaseInsensitiveContains("M5")
+                    || $0.message.localizedCaseInsensitiveContains("origin")
+                    || $0.ruleIdentifier.localizedCaseInsensitiveContains("origin")
+                    || $0.ruleIdentifier.localizedCaseInsensitiveContains("spindle"))
+        })
 }
 
 @Test func forbiddenWordsAndSettingsAreRejected() {
@@ -141,6 +192,17 @@ private func program(_ text: String, moves: [ParsedMove] = []) -> ParsedProgram 
         let text = "G21\n\(token)\nM30"
         let findings = ValidationRules().evaluate(program(text), profile: profile)
         #expect(findings.contains { $0.severity == .error }, "expected rejection for \(token)")
-        #expect(findings.contains { $0.message.contains(token) || $0.ruleIdentifier.localizedCaseInsensitiveContains(token.replacingOccurrences(of: "$", with: "")) || $0.ruleIdentifier.localizedCaseInsensitiveContains("unsupported") || $0.ruleIdentifier.localizedCaseInsensitiveContains("forbidden") || $0.message.localizedCaseInsensitiveContains("reject") || $0.message.localizedCaseInsensitiveContains("unsupported") || $0.message.localizedCaseInsensitiveContains("forbidden") || $0.message.localizedCaseInsensitiveContains(token) }, "finding should identify \(token)")
+        #expect(
+            findings.contains {
+                $0.message.contains(token)
+                    || $0.ruleIdentifier.localizedCaseInsensitiveContains(
+                        token.replacingOccurrences(of: "$", with: ""))
+                    || $0.ruleIdentifier.localizedCaseInsensitiveContains("unsupported")
+                    || $0.ruleIdentifier.localizedCaseInsensitiveContains("forbidden")
+                    || $0.message.localizedCaseInsensitiveContains("reject")
+                    || $0.message.localizedCaseInsensitiveContains("unsupported")
+                    || $0.message.localizedCaseInsensitiveContains("forbidden")
+                    || $0.message.localizedCaseInsensitiveContains(token)
+            }, "finding should identify \(token)")
     }
 }

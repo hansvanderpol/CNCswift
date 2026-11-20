@@ -23,7 +23,7 @@ extension GCodeEmitter {
             material: material,
             job: job,
             profile: profile,
-            appliedScale: 1.0,
+            appliedScale: appliedScale,
             modelFileName: modelFileName,
             generatedAt: generatedAt
         )
@@ -156,7 +156,8 @@ private enum MoveRenderer {
         for move in toolpath.moves {
             switch move.mode {
             case .rapid:
-                result.append(contentsOf: rapidLines(from: current, to: move.to, profile: profile))
+                result.append(
+                    contentsOf: RapidFormatter.lines(from: current, to: move.to, profile: profile))
                 current = move.to
                 modalCut = false
 
@@ -185,53 +186,10 @@ private enum MoveRenderer {
 
         return result
     }
-
-    private static func rapidLines(
-        from current: Vec3,
-        to target: Vec3,
-        profile: MachineProfile
-    ) -> [String] {
-        var position = current
-        var result: [String] = []
-        let xyChanged = target.x != position.x || target.y != position.y
-        let zChanged = target.z != position.z
-
-        if zChanged && target.z < position.z {
-            // Never descend through material: retract, traverse in XY at clearance, then plunge.
-            if position.z != profile.clearanceZ {
-                result.append(axisCommand("G0", axes: [("Z", profile.clearanceZ)]))
-                position.z = profile.clearanceZ
-            }
-            if xyChanged {
-                result.append(axisCommand("G0", axes: [("X", target.x), ("Y", target.y)]))
-                position.x = target.x
-                position.y = target.y
-            }
-            if target.z != position.z {
-                result.append(axisCommand("G0", axes: [("Z", target.z)]))
-                position.z = target.z
-            }
-        } else {
-            var axes: [(String, Double)] = []
-            if zChanged { axes.append(("Z", target.z)) }
-            if xyChanged {
-                axes.append(("X", target.x))
-                axes.append(("Y", target.y))
-            }
-            if !axes.isEmpty { result.append(axisCommand("G0", axes: axes)) }
-        }
-
-        return result
-    }
-
-    private static func axisCommand(_ code: String, axes: [(String, Double)]) -> String {
-        ([code] + axes.map { "\($0.0)\(NumericFormatting.fixed3($0.1))" })
-            .joined(separator: " ")
-    }
 }
 
 /// Invariant, fixed-point number formatting with negative zero normalised away (research D8).
-private enum NumericFormatting {
+enum NumericFormatting {
     static func fixed3(_ value: Double) -> String {
         let normalised = value.isZero ? 0 : value
         return String(

@@ -1,0 +1,301 @@
+import CNCCutters
+import CNCCuttersStore
+import CNCDiagnostics
+import CNCGCode
+import CNCGeometry
+import CNCMachineProfile
+import CNCMaterials
+import CNCMaterialsStore
+import CNCPipeline
+import CNCSTL
+import CNCSimulation
+import CNCStorage
+import CNCToolpath
+import CNCValidation
+import Foundation
+import MainScreenUI
+import Observation
+
+/// A copyable, thread-safe cancellation flag for the `ProgressSink` closure.
+private final class CancellationFlag: @unchecked Sendable {
+    private let lock = NSLock()
+    private var value = false
+
+    func get() -> Bool {
+        lock.lock()
+        defer { lock.unlock() }
+        return value
+    }
+
+    func set(_ newValue: Bool) {
+        lock.lock()
+        defer { lock.unlock() }
+        value = newValue
+    }
+}
+
+/// US1 composition root.
+///
+/// The app owns no domain state: it loads cutters and materials from the Foundational stores,
+/// decodes the selected STL, and injects write-free generation into the main-screen model. The
+/// preview simulator is the documented US1 stub; US3 replaces it without changing this wiring.
+@MainActor
+@Observable
+final class AppComposition {
+    let profile = TTC450Pro.profile
+    let model: MainScreenModel
+
+    private(set) var cutters: [Cutter] = []
+    private(set) var materials: [Material] = Presets.all
+
+    private let fileSystem: any FileSystem
+    private let cutterStore: CutterLibraryStore
+    private let materialStore: MaterialLibraryStore
+    private let cutterURL: URL
+    private let materialURL: URL
+    private let outputDirectory: URL
+    private let cancellation = CancellationFlag()
+
+    private var loadedModel: MeshDocument?
+    private var pipeline: ToolpathService
+
+    init(fileSystem: any FileSystem = DiskFileSystem()) {
+        self.fileSystem = fileSystem
+        let supportRoot =
+            FileManager.default
+            .urls(for: .applicationSupportDirectory, in: .userDomainMask)
+            .first ?? URL(fileURLWithPath: NSTemporaryDirectory())
+        let appRoot = supportRoot.appendingPathComponent("CNCswift", isDirectory: true)
+        try? FileManager.default.createDirectory(at: appRoot, withIntermediateDirectories: true)
+
+        cutterURL = appRoot.appendingPathComponent("cutters.json")
+        materialURL = appRoot.appendingPathComponent("materials.json")
+        outputDirectory = appRoot.appendingPathComponent("gcode", isDirectory: true)
+        try? FileManager.default.createDirectory(
+            at: outputDirectory,
+            withIntermediateDirectories: true
+        )
+
+        cutterStore = CutterLibraryStore(fileSystem: fileSystem)
+        materialStore = MaterialLibraryStore(fileSystem: fileSystem)
+        model = MainScreenModel()
+        pipeline = Self.makePipeline(
+            modelFileName: "model.stl", appliedScale: 1, fileSystem: fileSystem)
+
+        model.generate = { [weak self] in
+            guard let self else { return .failed("The app composition is unavailable.") }
+            return await self.generate()
+        }
+        model.cancel = { [weak self] in
+            self?.cancelGeneration()
+        }
+        model.loadModel = { [weak self] url in
+            await self?.loadModel(url: url) ?? false
+        }
+    }
+
+    /// Loads the persisted libraries and primes selection, prefills, and suggestions.
+    func loadLibraries() async {
+        do {
+            let loadedCutters: [Cutter]
+            switch try await cutterStore.load(from: cutterURL) {
+            case .loaded(let values), .migrated(_, let values):
+                loadedCutters = values
+            case .absent, .refused, .corrupt:
+                loadedCutters = []
+            }
+            cutters = loadedCutters
+
+            if let selected = model.selectedCutterID,
+                !loadedCutters.contains(where: { $0.id == selected })
+            {
+                model.clearCutterSelection()
+            } else if model.selectedCutterID == nil {
+                model.selectCutter(loadedCutters.first?.id)
+            }
+
+            materials = try await materialStore.resolvedMaterials(from: materialURL)
+            if model.selectedMaterialID == nil {
+                model.selectMaterial(materials.first?.id ?? "")
+            }
+            refreshDerivedValues()
+        } catch {
+            model.reportFailure(error.localizedDescription)
+        }
+    }
+
+    /// Decodes one STL, resets model-specific confirmations, and primes stock and strategy values.
+    func loadModel(url: URL) async -> Bool {
+        let didStartAccess = url.startAccessingSecurityScopedResource()
+        defer {
+            if didStartAccess { url.stopAccessingSecurityScopedResource() }
+        }
+
+        do {
+            let decoded = try await STLDecoder.decode(url: url, progress: progressSink())
+            loadedModel = decoded
+            model.markModelLoaded(fileName: url.lastPathComponent)
+            model.updateStock(
+                width: max(1, decoded.bounds.max.x - decoded.bounds.min.x),
+                depth: max(1, decoded.bounds.max.y - decoded.bounds.min.y),
+                height: max(1, decoded.bounds.max.z - decoded.bounds.min.z)
+            )
+            pipeline = Self.makePipeline(
+                modelFileName: url.lastPathComponent,
+                appliedScale: model.appliedScale,
+                fileSystem: fileSystem
+            )
+            refreshDerivedValues()
+            return true
+        } catch {
+            loadedModel = nil
+            model.clearModel()
+            model.reportFailure(error.localizedDescription)
+            return false
+        }
+    }
+
+    private func generate() async -> MainScreenGenerationStatus {
+        guard let document = loadedModel,
+            let cutter = model.resolvedCutter(in: cutters),
+            let materialID = model.selectedMaterialID,
+            let material = materials.first(where: { $0.id == materialID }),
+            let effective = model.effectiveValues,
+            effective.confirmed,
+            let suggestion = model.appliedSuggestion
+        else {
+            return .failed("Finish the confirmations before generating.")
+        }
+
+        pipeline = Self.makePipeline(
+            modelFileName: documentFileName ?? "model.stl",
+            appliedScale: model.appliedScale,
+            fileSystem: fileSystem
+        )
+
+        let job = JobSettings(
+            mesh: document.mesh,
+            modelBounds: document.bounds,
+            stock: model.stock,
+            cutter: cutter,
+            materialID: material.id,
+            effective: effective,
+            stepover: suggestion.stepover,
+            maxDepthPerPass: suggestion.maxDepthPerPass,
+            finishingAllowance: suggestion.finishingAllowance,
+            unitsConfirmed: model.unitsConfirmed,
+            orientationConfirmed: model.orientationConfirmed,
+            rapidRateConfirmed: model.rapidRateConfirmed,
+            confirmed: true
+        )
+
+        do {
+            _ = try Preflight.check(job, cutter: cutter, profile: profile)
+            cancellation.set(false)
+            let request = GenerationRequest(
+                model: document,
+                job: job,
+                cutter: cutter,
+                material: material,
+                profile: profile,
+                destination: outputDirectory.appendingPathComponent("generated.nc"),
+                generatedAt: Date()
+            )
+            let outcome = try await pipeline.run(request, progress: progressSink())
+            switch outcome {
+            case .ready:
+                return .ready
+            case .blocked(let findings):
+                return .blocked(findings.map(\.message))
+            case .cancelled:
+                return .cancelled
+            }
+        } catch {
+            return .failed(error.localizedDescription)
+        }
+    }
+
+    private func cancelGeneration() {
+        cancellation.set(true)
+    }
+
+    private func refreshDerivedValues() {
+        guard let cutter = model.resolvedCutter(in: cutters),
+            let materialID = model.selectedMaterialID,
+            let material = materials.first(where: { $0.id == materialID })
+        else { return }
+
+        switch EffectiveCuttingValues.resolve(material: material, cutter: cutter, profile: profile)
+        {
+        case .resolved(let values):
+            model.setEffectiveValues(values)
+            model.setMaterialOverlap(true)
+        case .noOverlap:
+            model.setEffectiveValues(nil)
+            model.setMaterialOverlap(false)
+        }
+
+        let suggestion = JobSuggestionEngine().suggestion(
+            cutter: cutter,
+            stock: model.stock,
+            profile: profile
+        )
+        model.setSuggestion(suggestion)
+    }
+
+    private var documentFileName: String? {
+        model.modelFileName
+    }
+
+    private func progressSink() -> ProgressSink {
+        ProgressSink { [weak model] stage in
+            Task { @MainActor in
+                model?.reportProgress(completed: stage.completed, total: stage.total)
+            }
+        } isCancelled: { [cancellation] in
+            cancellation.get()
+        }
+    }
+
+    private static func makePipeline(
+        modelFileName: String,
+        appliedScale: Double,
+        fileSystem: any FileSystem
+    ) -> ToolpathService {
+        ToolpathService(
+            planner: ToolpathPlanner(),
+            renderer: GCodeEmitter(modelFileName: modelFileName, appliedScale: appliedScale),
+            validator: GRBLValidator(),
+            simulator: US1StubSimulator(),
+            writer: FileWriter(fileSystem: fileSystem)
+        )
+    }
+}
+
+/// The US1 preview stub replaced by the real material-removal simulator in T102.
+private struct US1StubSimulator: MaterialRemovalSimulating {
+    func simulate(
+        _ program: ParsedProgram,
+        job: JobSettings,
+        profile: MachineProfile,
+        progress: ProgressSink
+    ) async throws -> SimulationResult {
+        _ = (program, profile)
+        let origin = Vec3(x: 0, y: 0, z: 0)
+        let heightmap = Heightmap(
+            columns: 1,
+            rows: 1,
+            resolution: 1,
+            origin: origin,
+            values: [-job.stock.height]
+        )
+        let cancelled = Task.isCancelled || progress.isCancelled()
+        return SimulationResult(
+            heightmap: heightmap,
+            resolution: 1,
+            removedVolume: 0,
+            violations: [],
+            cancelled: cancelled
+        )
+    }
+}

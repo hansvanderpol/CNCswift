@@ -7,8 +7,10 @@ import Foundation
 /// writer when deriving the output filename.
 public struct GCodeEmitter: GCodeRendering, Sendable {
     public let modelFileName: String
+    public let appliedScale: Double
 
-    public init(modelFileName: String = "relief-demo-binary.stl") {
+    public init(modelFileName: String = "relief-demo-binary.stl", appliedScale: Double = 1) {
         self.modelFileName = modelFileName
+        self.appliedScale = appliedScale
     }
 }

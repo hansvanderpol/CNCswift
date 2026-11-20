@@ -188,7 +188,7 @@ private func request(destination: URL) throws -> GenerationRequest {
         mesh: mesh,
         modelBounds: bounds,
         stock: StockBlank(width: 200, depth: 150, height: 30),
-        cutterID: cutter.id,
+        cutter: cutter,
         materialID: material.id,
         effective: effective,
         stepover: 2.4,
@@ -336,10 +336,11 @@ private func readyProgram(
 @Test func aCancelledSimulationCannotBeCommitted() async throws {
     let fs = FakeFileSystem()
     let destination = URL(fileURLWithPath: "/sandbox/cancelled.nc")
-    let outcome = try await service(
-        fileSystem: fs,
-        simulator: FakeSimulator(cancelled: true)
-    ).run(try request(destination: destination), progress: progress())
+    let sut = service(fileSystem: fs, simulator: FakeSimulator(cancelled: true))
+    let outcome = try await sut.run(
+        try request(destination: destination),
+        progress: progress()
+    )
 
     guard case .cancelled = outcome else {
         Issue.record("expected cancelled, got \(outcome)")
@@ -354,7 +355,7 @@ private func readyProgram(
         profile: prepared.profile
     )
     do {
-        try await service(fileSystem: fs).commit(
+        try await sut.commit(
             program,
             confirmation: WriteConfirmation(previewShown: true, findingsAcknowledged: true),
             to: destination

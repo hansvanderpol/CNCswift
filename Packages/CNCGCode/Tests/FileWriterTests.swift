@@ -1,5 +1,5 @@
-import CNCGCode
 import CNCCutters
+import CNCGCode
 import CNCGeometry
 import CNCMachineProfile
 import CNCMaterials
@@ -47,7 +47,9 @@ private final class FakeFileSystem: FileSystem, @unchecked Sendable {
     }
 }
 
-private func sampleProgram(modelFileName: String = "relief-demo-binary.stl") throws -> RenderedProgram {
+private func sampleProgram(modelFileName: String = "relief-demo-binary.stl") throws
+    -> RenderedProgram
+{
     let record = GenerationRecord(
         cutter: EmitterFixture.cutter,
         material: EmitterFixture.material,
@@ -89,7 +91,8 @@ private func sampleProgram(modelFileName: String = "relief-demo-binary.stl") thr
     let fs = FakeFileSystem()
     let writer = FileWriter(fileSystem: fs)
 
-    try await writer.write(try sampleProgram(modelFileName: "###.stl"), to: URL(fileURLWithPath: "/tmp/out/x"))
+    try await writer.write(
+        try sampleProgram(modelFileName: "###.stl"), to: URL(fileURLWithPath: "/tmp/out/x"))
 
     let writtenURL = try #require(fs.files.withLock { $0.keys.first })
     #expect(writtenURL.lastPathComponent == "carve.nc")
@@ -101,7 +104,8 @@ private func sampleProgram(modelFileName: String = "relief-demo-binary.stl") thr
     let url = URL(fileURLWithPath: "/tmp/output/relief-demo-binary.nc")
     fs.files.withLock { $0[url] = Data("old".utf8) }
 
-    try await writer.write(try sampleProgram(), to: URL(fileURLWithPath: "/tmp/output/relief-demo-binary.stl"))
+    try await writer.write(
+        try sampleProgram(), to: URL(fileURLWithPath: "/tmp/output/relief-demo-binary.stl"))
 
     #expect(fs.exists(url))
     #expect(String(data: try fs.read(url), encoding: .utf8) == "G21\nM30\n")
