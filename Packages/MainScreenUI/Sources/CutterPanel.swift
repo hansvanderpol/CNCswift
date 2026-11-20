@@ -10,11 +10,13 @@ public struct CutterPanel: View {
     private let model: MainScreenModel
     private let cutters: [Cutter]
 
+    /// Creates a panel that lists `cutters` and records selections in `model`.
     public init(model: MainScreenModel, cutters: [Cutter]) {
         self.model = model
         self.cutters = cutters
     }
 
+    /// The stored-cutter list, or a message when no cutters are stored.
     public var body: some View {
         GroupBox {
             VStack(alignment: .leading, spacing: 8) {
@@ -63,9 +65,10 @@ public struct CutterPanel: View {
                         .font(.headline)
                     Spacer()
                     if isSelected {
+                        // The button's value already announces the selected state.
                         Image(systemName: "checkmark.circle.fill")
                             .foregroundStyle(Color.accentColor)
-                            .accessibilityHidden(true)  // the button's value already says "Selected"
+                            .accessibilityHidden(true)
                     }
                 }
                 Text(

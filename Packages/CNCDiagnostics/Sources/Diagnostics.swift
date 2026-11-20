@@ -2,13 +2,18 @@ import Foundation
 import os
 
 /// A stable identifier tying a typed stage error to its structured log record (FR-067).
+///
+/// - Concurrency: Immutable and `Sendable`; safe to pass between tasks.
 public struct CorrelationID: Hashable, Sendable, CustomStringConvertible, Equatable {
+    /// The identifier's raw text.
     public let rawValue: String
 
+    /// Wraps `rawValue` as a correlation identifier without validation.
     public init(_ rawValue: String) {
         self.rawValue = rawValue
     }
 
+    /// The raw identifier text.
     public var description: String { rawValue }
 }
 
@@ -22,12 +27,19 @@ public protocol CNCError: Error, Sendable {
 }
 
 /// A typed failure from one pipeline stage.
+///
+/// - Concurrency: Immutable and `Sendable`; safe to pass between tasks.
 public struct StageFailure: CNCError, Equatable, Sendable {
+    /// The pipeline stage that produced the failure.
     public let stage: String
+    /// The short description of what went wrong.
     public let reason: String
+    /// The actionable remedy shown with the reason.
     public let fix: String
+    /// The identifier shared with the matching log record.
     public let correlationID: CorrelationID
 
+    /// Creates a failure with an explicit correlation identifier.
     public init(stage: String, reason: String, fix: String, correlationID: CorrelationID) {
         self.stage = stage
         self.reason = reason
@@ -35,6 +47,7 @@ public struct StageFailure: CNCError, Equatable, Sendable {
         self.correlationID = correlationID
     }
 
+    /// Creates a failure with a freshly generated correlation identifier.
     public init(stage: String, reason: String, fix: String) {
         self.stage = stage
         self.reason = reason
@@ -42,15 +55,21 @@ public struct StageFailure: CNCError, Equatable, Sendable {
         self.correlationID = CorrelationID(UUID().uuidString)
     }
 
+    /// The reason followed by the fix, separated by a period and a space.
     public var userMessage: String {
         "\(reason). \(fix)"
     }
 }
 
 /// One structured log record, returned so tests can assert what the logger emitted.
+///
+/// - Concurrency: Immutable and `Sendable`; safe to pass between tasks.
 public struct DiagnosticLogRecord: Sendable, Equatable {
+    /// The correlation identifier carried by this record.
     public let correlationID: CorrelationID
+    /// The logging category that emitted the record.
     public let category: String
+    /// The emitted message, including the identifier where applicable.
     public let message: String
 }
 
@@ -58,6 +77,8 @@ public struct DiagnosticLogRecord: Sendable, Equatable {
 ///
 /// Each domain package logs under its own category so a session can be filtered by stage without
 /// parsing message text.
+///
+/// - Concurrency: Immutable and `Sendable`; safe to pass between tasks.
 public enum DiagnosticCategory: String, CaseIterable, Sendable {
     case decode
     case plan
@@ -75,13 +96,18 @@ public enum DiagnosticCategory: String, CaseIterable, Sendable {
 ///
 /// A logger is bound to one subsystem and one default category; pass a different category only
 /// when one module reports on behalf of another stage.
+///
+/// - Concurrency: Immutable and `Sendable`; safe to share across tasks.
 public struct DiagnosticLogger: Sendable {
     /// The app's single logging subsystem.
     public static let defaultSubsystem = "com.hansvanderpol.CNCswift"
 
+    /// The logging subsystem passed to `os.Logger`.
     public let subsystem: String
+    /// The default category used when a record does not override it.
     public let category: DiagnosticCategory
 
+    /// Creates a logger bound to `subsystem` and `category`.
     public init(
         subsystem: String = DiagnosticLogger.defaultSubsystem,
         category: DiagnosticCategory = .pipeline

@@ -14,6 +14,7 @@ public struct MainScreen: View {
 
     private let stlType: UTType
 
+    /// Creates the screen with its model, stored cutters, materials, and machine profile.
     public init(
         model: MainScreenModel,
         cutters: [Cutter],
@@ -27,6 +28,7 @@ public struct MainScreen: View {
         stlType = UTType(filenameExtension: "stl") ?? .data
     }
 
+    /// The three-panel job workspace with its units sheet and STL file importer.
     public var body: some View {
         NavigationStack {
             VStack(alignment: .leading, spacing: 16) {

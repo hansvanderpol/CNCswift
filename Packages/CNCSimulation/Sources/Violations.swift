@@ -9,9 +9,16 @@ import Foundation
 /// violation before the write gate, with the offending line and the same numbers the validator
 /// uses. A stage package deliberately has no dependency on `CNCPipeline`: the write-side refusal
 /// lives there, while this collector only names and measures.
+///
+/// - Concurrency: Sendable value safe to construct and call across actor boundaries.
 public struct SimulationViolations: Sendable {
+    /// Creates a stateless collector with no configuration.
     public init() {}
 
+    /// Reports envelope breaches and cutting-feed ceiling violations in the parsed program.
+    ///
+    /// - Parameter job: Accepted for stage symmetry; checks read the profile and parsed moves.
+    /// - Returns: A violation per offending move, with its line number when available.
     public func collect(
         _ program: ParsedProgram,
         job: JobSettings,

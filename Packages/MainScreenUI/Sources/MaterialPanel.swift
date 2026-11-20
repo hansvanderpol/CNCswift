@@ -16,6 +16,7 @@ public struct MaterialPanel: View {
     private let cutters: [Cutter]
     private let profile: MachineProfile
 
+    /// Creates the panel from `model`, `materials`, `cutters`, and the machine `profile`.
     public init(
         model: MainScreenModel,
         materials: [CNCMaterials.Material],
@@ -28,6 +29,7 @@ public struct MaterialPanel: View {
         self.profile = profile
     }
 
+    /// The material, stock, effective-value, job-setting, and rapid-rate sections.
     public var body: some View {
         GroupBox {
             ScrollView {

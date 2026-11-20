@@ -8,24 +8,48 @@ import Observation
 /// simulation's own violations are shown before the write button becomes available; a cancelled
 /// simulation never reaches that state. This object is main-actor isolated because SwiftUI reads
 /// it directly, and it owns no pipeline or file-system reference.
+///
+/// - Concurrency: Main-actor isolated; observed directly by SwiftUI.
 @Observable
 @MainActor
 public final class SimulationModel {
     /// The last completed, non-cancelled simulation, when one is available for preview.
+    ///
+    /// - Concurrency: Main-actor isolated observable state.
     public private(set) var result: SimulationResult?
 
     /// Named validation and simulation problems shown above the preview.
+    ///
+    /// - Concurrency: Main-actor isolated observable state.
     public private(set) var findings: [String] = []
 
     /// Envelope and limit violations from the simulation that block the write (FR-064).
+    ///
+    /// - Concurrency: Main-actor isolated observable state.
     public private(set) var violations: [SimulationViolation] = []
 
+    /// The number of completed generation stages reported by the action.
+    ///
+    /// - Concurrency: Main-actor isolated observable state.
     public private(set) var progressCompleted: Int = 0
+    /// The total number of generation stages reported by the action.
+    ///
+    /// - Concurrency: Main-actor isolated observable state.
     public private(set) var progressTotal: Int = 0
+    /// Whether the simulation was cancelled rather than completed.
+    ///
+    /// - Concurrency: Main-actor isolated observable state.
     public private(set) var isCancelled: Bool = false
+    /// Whether a non-cancelled simulation result is being previewed.
+    ///
+    /// - Concurrency: Main-actor isolated observable state.
     public private(set) var previewShown: Bool = false
+    /// Whether the operator acknowledged the displayed findings.
+    ///
+    /// - Concurrency: Main-actor isolated observable state.
     public private(set) var findingsAcknowledged: Bool = false
 
+    /// Creates an empty simulation state ready for a new run.
     public init() {}
 
     /// Clears all preview and acknowledgement state before a new run.

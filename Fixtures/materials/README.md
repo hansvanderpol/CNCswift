@@ -51,6 +51,23 @@ both `presets.json` and this file marked provisional.
 | Bands amended (with replacement values) | _unsigned_ |
 | Outcome | **provisional** |
 
+### T111 decision record — 2026-11-20
+
+No physical cutting-experience review was performed for this wave. No machine, spindle, stock or
+cutting time was available, so none of the fields above can be signed truthfully and the bands
+remain **provisional engineering guidance**. They MUST NOT be described as certified cutting data
+in the UI, documentation or generated-file headers.
+
+Consequences (research D11, plan task-shaping note 13):
+
+- `Fixtures/materials/presets.json` keeps `"status": "provisional"` and each preset keeps
+  `"shippedVersion": "provisional"`; the fixture test continues to assert that marker.
+- Generation remains available: the enforceable gate is the per-job confirmation of effective
+  feed and spindle (FR-079), not the review status.
+- Promoting the bands requires actual cutting on the TTC450 PRO, a completed table above, and a
+  deliberate coordinated edit of this file, `presets.json`, and the `data-model.md` preset table
+  under the amendment rule below.
+
 ## Amendment rule
 
 Changing a shipped band, adding a fifth preset, or removing one changes what the app recommends

@@ -7,6 +7,8 @@ import Foundation
 import Observation
 
 /// A reason generation is blocked on the main screen (FR-024, FR-037, FR-040, FR-080).
+///
+/// - Concurrency: Sendable value; safe to pass across tasks.
 public enum GenerationBlocker: String, Sendable, Equatable, Hashable {
     case unconfirmedModel
     case unconfirmedScale
@@ -38,12 +40,19 @@ public enum GenerationBlocker: String, Sendable, Equatable, Hashable {
 }
 
 /// A suggested job strategy that must be confirmed before it is applied (FR-037).
+///
+/// - Concurrency: Sendable value; safe to pass across tasks.
 public struct JobSuggestion: Sendable, Equatable {
+    /// The suggested stepover distance in millimetres.
     public let stepover: Double
+    /// The suggested maximum depth per cutting pass in millimetres.
     public let maxDepthPerPass: Double
+    /// The suggested finishing allowance in millimetres.
     public let finishingAllowance: Double
+    /// Whether the operator has explicitly confirmed these values.
     public let confirmed: Bool
 
+    /// Creates a suggestion from the given values and confirmation flag.
     public init(
         stepover: Double,
         maxDepthPerPass: Double,
@@ -68,7 +77,10 @@ public struct JobSuggestion: Sendable, Equatable {
 }
 
 /// Suggests a starting job strategy without applying it (FR-037).
+///
+/// - Concurrency: Stateless and Sendable; safe to use concurrently.
 public struct JobSuggestionEngine: Sendable {
+    /// Creates an engine with no stored configuration.
     public init() {}
 
     /// Suggests values for `cutter` and `stock`; the caller must confirm them before use.
@@ -99,28 +111,54 @@ public struct JobSuggestionEngine: Sendable {
 /// It lives in the main-screen model because SwiftUI's `@State` macro is unavailable with the
 /// Command Line Tools toolchain; an `@Observable` object provides the same stable storage without a
 /// missing macro plugin.
+///
+/// - Concurrency: Main-actor isolated; observed directly by SwiftUI.
 @Observable
 @MainActor
 public final class UnitsConfirmationDraft {
+    /// Toggle state for confirming millimetres as the model's units.
+    ///
+    /// - Concurrency: Main-actor isolated observable state.
     public var unitsAreMillimetres = false
+    /// Toggle state for confirming that the model's Z axis points up.
+    ///
+    /// - Concurrency: Main-actor isolated observable state.
     public var orientationIsZUp = false
+    /// Raw text for the scale factor before it is applied.
+    ///
+    /// - Concurrency: Main-actor isolated observable state.
     public var scaleText = ""
 
+    /// Creates an empty confirmation draft.
     public init() {}
 }
 
 /// Mutable text state for the stock dimension fields.
+///
+/// - Concurrency: Main-actor isolated; observed directly by SwiftUI.
 @Observable
 @MainActor
 public final class StockDraft {
+    /// Raw width text for the stock blank in millimetres.
+    ///
+    /// - Concurrency: Main-actor isolated observable state.
     public var width = "200"
+    /// Raw depth text for the stock blank in millimetres.
+    ///
+    /// - Concurrency: Main-actor isolated observable state.
     public var depth = "150"
+    /// Raw height text for the stock blank in millimetres.
+    ///
+    /// - Concurrency: Main-actor isolated observable state.
     public var height = "30"
 
+    /// Creates a stock draft with default width, depth, and height text.
     public init() {}
 }
 
 /// The outcome of one UI-initiated generation attempt.
+///
+/// - Concurrency: Sendable value; safe to pass across tasks.
 public enum MainScreenGenerationStatus: Sendable, Equatable {
     case idle
     case running
@@ -131,47 +169,124 @@ public enum MainScreenGenerationStatus: Sendable, Equatable {
 }
 
 /// The main-screen state that gates one generation job (FR-037, FR-040, FR-069).
+///
+/// - Concurrency: Main-actor isolated; observed directly by SwiftUI.
 @Observable
 @MainActor
 public final class MainScreenModel {
+    /// The identifier of the stored cutter selected for this job, if any.
+    ///
+    /// - Concurrency: Main-actor isolated observable state.
     public private(set) var selectedCutterID: CutterID?
+    /// Feed and spindle values resolved for the material and cutter, if any.
+    ///
+    /// - Concurrency: Main-actor isolated observable state.
     public private(set) var effectiveValues: EffectiveCuttingValues?
+    /// The confirmed job strategy applied to this job, if any.
+    ///
+    /// - Concurrency: Main-actor isolated observable state.
     public private(set) var appliedSuggestion: JobSuggestion?
+    /// Whether the operator confirmed the controller rapid-rate settings.
+    ///
+    /// - Concurrency: Main-actor isolated observable state.
     public private(set) var rapidRateConfirmed: Bool
+    /// Whether the selected material's bands overlap the machine limits.
+    ///
+    /// - Concurrency: Main-actor isolated observable state.
     public private(set) var materialHasOverlap: Bool
 
+    /// The identifier of the selected carving material, if any.
+    ///
+    /// - Concurrency: Main-actor isolated observable state.
     public private(set) var selectedMaterialID: String?
+    /// The stock blank dimensions committed from the form.
+    ///
+    /// - Concurrency: Main-actor isolated observable state.
     public private(set) var stock: StockBlank
+    /// Whether a model file has been loaded.
+    ///
+    /// - Concurrency: Main-actor isolated observable state.
     public private(set) var hasLoadedModel: Bool
+    /// The name of the loaded model file, if any.
+    ///
+    /// - Concurrency: Main-actor isolated observable state.
     public private(set) var modelFileName: String?
+    /// Whether the operator confirmed millimetre units.
+    ///
+    /// - Concurrency: Main-actor isolated observable state.
     public private(set) var unitsConfirmed: Bool
+    /// Whether the operator confirmed Z-up orientation.
+    ///
+    /// - Concurrency: Main-actor isolated observable state.
     public private(set) var orientationConfirmed: Bool
+    /// The explicit scale used to convert file units to millimetres.
+    ///
+    /// - Concurrency: Main-actor isolated observable state.
     public private(set) var appliedScale: Double
+    /// Whether an explicit positive scale has been applied.
+    ///
+    /// - Concurrency: Main-actor isolated observable state.
     public private(set) var scaleConfirmed: Bool
+    /// The latest job strategy suggested for the cutter and stock, confirmed or not.
+    ///
+    /// - Concurrency: Main-actor isolated observable state.
     public private(set) var pendingSuggestion: JobSuggestion?
+    /// The units confirmation form state.
     public let unitsDraft = UnitsConfirmationDraft()
+    /// The stock dimension form state.
     public let stockDraft = StockDraft()
+    /// Whether the units confirmation sheet is presented.
+    ///
+    /// - Concurrency: Main-actor isolated observable state.
     public private(set) var isUnitsSheetPresented = false
+    /// Whether the STL file importer is presented.
+    ///
+    /// - Concurrency: Main-actor isolated observable state.
     public private(set) var isFileImporterPresented = false
+    /// The outcome or current state of the last generation attempt.
+    ///
+    /// - Concurrency: Main-actor isolated observable state.
     public private(set) var generationStatus: MainScreenGenerationStatus
+    /// The number of completed generation stages.
+    ///
+    /// - Concurrency: Main-actor isolated observable state.
     public private(set) var progressCompleted: Int
+    /// The total number of generation stages.
+    ///
+    /// - Concurrency: Main-actor isolated observable state.
     public private(set) var progressTotal: Int
+    /// Whether cancellation has been requested for the running job.
+    ///
+    /// - Concurrency: Main-actor isolated observable state.
     public private(set) var isCancellationRequested: Bool
 
     /// The live preview state and orbit controls for the third main-screen panel (FR-061, FR-070).
     /// They are owned here so the panel views stay free of pipeline and file-system references.
     public let simulation = SimulationModel()
+    /// The keyboard navigation controls for the third panel.
     public let camera = SimulationCamera()
 
     /// Injected by the composition root; the UI never imports the pipeline package directly.
     ///
     /// These closures are main-actor isolated because the state they read and write belongs to the
     /// main screen. They cross no actor boundary until they reach the pipeline actor.
+    ///
+    /// - Concurrency: Main-actor isolated closure supplied by the composition root.
     public var generate: (@MainActor () async -> MainScreenGenerationStatus)?
+    /// Requests cancellation through the injected action.
+    ///
+    /// - Concurrency: Main-actor isolated closure supplied by the composition root.
     public var cancel: (@MainActor () -> Void)?
+    /// Loads a model from a file through the injected action; true on success.
+    ///
+    /// - Concurrency: Main-actor isolated closure supplied by the composition root.
     public var loadModel: (@MainActor (URL) async -> Bool)?
+    /// Commits the previewed program through the injected action; true when written.
+    ///
+    /// - Concurrency: Main-actor isolated closure supplied by the composition root.
     public var commit: (@MainActor () async -> Bool)?
 
+    /// Creates the model with optional cutter, values, suggestion, and confirmations.
     public init(
         selectedCutterID: CutterID? = nil,
         effectiveValues: EffectiveCuttingValues? = nil,
@@ -351,6 +466,9 @@ public final class MainScreenModel {
     }
 
     /// Runs the injected write-free generation action (FR-069).
+    ///
+    /// - Precondition: Every blocker must be cleared and the generate closure installed.
+    /// - Concurrency: Main-actor isolated; awaits the injected generation action.
     public func startGeneration() async {
         guard blockers().isEmpty, let generate else { return }
         generationStatus = .running
@@ -380,6 +498,8 @@ public final class MainScreenModel {
     ///
     /// The write itself is enforced by the pipeline's commit gate; this method only forwards the
     /// operator's intent and returns whether the file was written.
+    ///
+    /// - Concurrency: Main-actor isolated; awaits the injected commit action.
     @discardableResult
     public func commitProgram() async -> Bool {
         guard let commit else { return false }

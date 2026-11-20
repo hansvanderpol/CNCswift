@@ -6,6 +6,8 @@ import Synchronization
 ///
 /// Events say *what* changed, never the changed record, so the persisted document stays the only
 /// source of truth (FR-060, research D14).
+///
+/// - Concurrency: `Sendable` value type; safe to pass across concurrency boundaries.
 public enum LibraryChange: Sendable, Equatable {
     /// The library was written successfully.
     case saved

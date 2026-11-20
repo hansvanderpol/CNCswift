@@ -9,11 +9,19 @@ import Foundation
 ///
 /// Dimensions are millimetres. The origin is fixed at the front-left top corner: X0 Y0 at that
 /// corner and Z0 at the top surface (FR-009).
+///
+/// - Concurrency: `Sendable` value type; safe to share across concurrency boundaries.
 public struct StockBlank: Sendable, Equatable {
+    /// The stock width in millimetres along X.
     public let width: Double
+    /// The stock depth in millimetres along Y.
     public let depth: Double
+    /// The stock height in millimetres along Z.
     public let height: Double
 
+    /// Creates a stock blank with the given dimensions.
+    ///
+    /// - Precondition: Dimensions are positive and within the machine envelope for planning.
     public init(width: Double, depth: Double, height: Double) {
         self.width = width
         self.depth = depth
@@ -31,11 +39,17 @@ public enum MoveMode: String, Sendable, Equatable, Codable {
 }
 
 /// One ordered machine-space move.
+///
+/// - Concurrency: `Sendable` value type; safe to share across concurrency boundaries.
 public struct Move: Sendable, Equatable {
+    /// The starting point in machine space.
     public let from: Vec3
+    /// The ending point in machine space.
     public let to: Vec3
+    /// Whether the move cuts or repositions.
     public let mode: MoveMode
 
+    /// Creates a move between two machine-space points.
     public init(from: Vec3, to: Vec3, mode: MoveMode) {
         self.from = from
         self.to = to
@@ -47,7 +61,10 @@ public struct Move: Sendable, Equatable {
 ///
 /// Roughing moves come first, deepest layer first, then the finishing raster, so the order of
 /// `moves` is the program order. The toolpath is a pure function of the job inputs (FR-036).
+///
+/// - Concurrency: `Sendable` value type; safe to share across concurrency boundaries.
 public struct Toolpath: Sendable, Equatable {
+    /// The ordered machine-space moves in program order.
     public let moves: [Move]
 
     /// The job's confirmed effective feed, applied to every cutting move (FR-040).
@@ -56,6 +73,9 @@ public struct Toolpath: Sendable, Equatable {
     /// The machine-space box the moves occupy; it must lie inside the envelope and the stock.
     public let bounds: AABB
 
+    /// Creates a toolpath from ordered moves, feed, and bounds.
+    ///
+    /// - Precondition: `moves` is non-empty for rendering and `feedRate` is the confirmed feed.
     public init(moves: [Move], feedRate: Double, bounds: AABB) {
         self.moves = moves
         self.feedRate = feedRate
@@ -66,6 +86,8 @@ public struct Toolpath: Sendable, Equatable {
 /// The confirmed choices binding one model, stock, material, cutter, and strategy to a job.
 ///
 /// Every field is a value: the planner never reads the library, the UI, or the clock.
+///
+/// - Concurrency: `Sendable` value type; safe to share across concurrency boundaries.
 public struct JobSettings: Sendable, Equatable {
     /// The model mesh in model space; the planner applies the explicit machine transform.
     public let mesh: Mesh
@@ -73,6 +95,7 @@ public struct JobSettings: Sendable, Equatable {
     /// The model's bounds in model units, used for footprint and fit checks.
     public let modelBounds: AABB
 
+    /// The blank the model is carved from.
     public let stock: StockBlank
 
     /// The stored cutter this job references, resolved from the library before planning.
@@ -112,6 +135,9 @@ public struct JobSettings: Sendable, Equatable {
     /// The user confirmed the suggested strategy values (FR-037).
     public let confirmed: Bool
 
+    /// Creates a job from confirmed model, stock, cutter, material, and strategy values.
+    ///
+    /// - Precondition: All confirmation flags are true and the geometry passes `Preflight.check`.
     public init(
         mesh: Mesh,
         modelBounds: AABB,
@@ -147,6 +173,8 @@ public struct JobSettings: Sendable, Equatable {
 /// Machine-readable reasons planning was refused.
 ///
 /// Errors name the failing precondition; the UI maps each case to an actionable message (FR-067).
+///
+/// - Concurrency: `Sendable` error value; safe to share across concurrency boundaries.
 public enum PlanningError: Error, Equatable, Sendable {
     /// The model is larger than the stock on at least one axis (FR-011).
     case modelOutsideStock
@@ -230,6 +258,8 @@ public enum PlanningError: Error, Equatable, Sendable {
 }
 
 /// The planning stage boundary (FR-032 – FR-041).
+///
+/// - Concurrency: Conformers are `Sendable` and may be shared across concurrency boundaries.
 public protocol ToolpathPlanning: Sendable {
     /// Produces ordered roughing and finishing moves.
     ///
@@ -238,6 +268,7 @@ public protocol ToolpathPlanning: Sendable {
     ///   cutter long enough to reach the stock bottom.
     /// - Throws: `PlanningError` for every failed precondition.
     /// - Note: Pure; no I/O, no clock, no randomness. Cancellation is reported through `progress`.
+    /// - Concurrency: `async`; cancellation is reported through `progress`.
     func plan(
         _ job: JobSettings,
         profile: MachineProfile,

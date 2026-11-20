@@ -9,11 +9,13 @@ public struct ConfirmUnitsSheet: View {
     private let model: MainScreenModel
     private let draft: UnitsConfirmationDraft
 
+    /// Creates a sheet bound to `model` and the draft holding the confirmations.
     public init(model: MainScreenModel, draft: UnitsConfirmationDraft) {
         self.model = model
         self.draft = draft
     }
 
+    /// The unit, orientation, and scale confirmation controls with their status.
     public var body: some View {
         VStack(alignment: .leading, spacing: 16) {
             Text("Confirm model units and orientation")

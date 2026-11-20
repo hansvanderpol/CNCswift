@@ -15,6 +15,10 @@ extension GenerationRecord {
 /// The same rule is shared by the header and the writer so a committed file always matches the
 /// program that was previewed.
 public enum OutputFileName {
+    /// Derives a deterministic ASCII output filename from a model path.
+    ///
+    /// - Parameter fileExtension: The extension to append without a leading dot.
+    /// - Returns: A sanitized basename with the extension, defaulting to `carve.<ext>`.
     public static func deriving(
         from modelFileName: String,
         fileExtension: String = "nc"

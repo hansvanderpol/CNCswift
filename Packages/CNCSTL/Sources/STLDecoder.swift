@@ -2,19 +2,33 @@ import CNCDiagnostics
 import CNCGeometry
 import Foundation
 
+/// The STL encodings recognized by the decoder.
+///
+/// - Concurrency: Immutable and `Sendable`; safe to pass between tasks.
 public enum STLEncoding: String, Sendable, Equatable {
     case ascii
     case binary
 }
 
+/// A decoded STL mesh with the measurements needed by downstream validation.
+///
+/// - Concurrency: Immutable and `Sendable`; safe to pass from a decoding task to its
+///   caller.
 public struct MeshDocument: Sendable, Equatable {
+    /// The encoding used by the source file.
     public let encoding: STLEncoding
+    /// The triangle count reported with the decoded mesh.
     public let triangleCount: Int
+    /// The axis-aligned bounding box of the decoded vertices.
     public let bounds: AABB
+    /// Whether the mesh has no degenerate triangles and every edge is shared twice.
     public let isManifold: Bool
+    /// The number of zero-area triangles found while decoding.
     public let degenerateTriangleCount: Int
+    /// The decoded triangle mesh.
     public let mesh: Mesh
 
+    /// Creates a document from decoded triangles and their measurements.
     public init(
         encoding: STLEncoding,
         triangleCount: Int,
@@ -32,7 +46,11 @@ public struct MeshDocument: Sendable, Equatable {
     }
 }
 
+/// A typed failure produced while reading or validating an STL file.
+///
+/// - Concurrency: Immutable and `Sendable`; safe to pass between tasks.
 public struct DecodeError: CNCError, Equatable, Sendable {
+    /// The categories of STL decode failure.
     public enum Kind: Sendable, Equatable {
         case empty
         case truncated
@@ -41,11 +59,16 @@ public struct DecodeError: CNCError, Equatable, Sendable {
         case degenerate
     }
 
+    /// The failure category.
     public let kind: Kind
+    /// The source file name, or an empty string when unavailable.
     public let fileName: String
+    /// The identifier shared with the matching log record.
     public let correlationID: CorrelationID
+    /// Extra corruption detail, or an empty string when unavailable.
     public let detail: String
 
+    /// Creates an error of `kind`, generating a fresh correlation identifier.
     public init(kind: Kind, fileName: String = "", detail: String = "") {
         self.kind = kind
         self.fileName = fileName
@@ -53,16 +76,23 @@ public struct DecodeError: CNCError, Equatable, Sendable {
         self.detail = detail
     }
 
+    /// An error for an STL file with no triangles.
     public static let empty = DecodeError(kind: .empty)
+    /// An error for an STL file that ends before its declared content.
     public static let truncated = DecodeError(kind: .truncated)
+    /// An error for an STL file whose bytes or text cannot be parsed.
     public static let corrupt = DecodeError(kind: .corrupt)
+    /// An error for a mesh whose edges are not shared exactly twice.
     public static let nonManifold = DecodeError(kind: .nonManifold)
+    /// An error for a mesh containing zero-area triangles.
     public static let degenerate = DecodeError(kind: .degenerate)
 
+    /// Compares errors by `kind` only.
     public static func == (lhs: DecodeError, rhs: DecodeError) -> Bool {
         lhs.kind == rhs.kind
     }
 
+    /// A user-facing message describing the file and the decode failure.
     public var userMessage: String {
         let name = fileName.isEmpty ? "STL file" : fileName
         switch kind {
@@ -83,7 +113,14 @@ public struct DecodeError: CNCError, Equatable, Sendable {
     }
 }
 
+/// Decodes ASCII and binary STL files into a validated `MeshDocument`.
 public enum STLDecoder {
+    /// Reads the STL file at `url`, reporting parse progress through `progress`.
+    ///
+    /// - Throws: `DecodeError` for empty, truncated, corrupt, degenerate, or non-manifold
+    ///   input, including unreadable files.
+    /// - Concurrency: Async; reports progress through `progress`; binary decoding also checks
+    ///   task and sink cancellation.
     public static func decode(url: URL, progress: ProgressSink) async throws -> MeshDocument {
         let data: Data
         do {

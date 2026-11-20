@@ -9,13 +9,21 @@ import CNCValidation
 import Foundation
 
 /// Machine-readable reasons a pipeline operation was refused.
+///
+/// - Concurrency: Sendable error value safe to throw across actor boundaries.
 public enum PipelineError: Error, Equatable, Sendable {
+    /// No prepared run was recorded for the program being committed.
     case notReady
+    /// The preview was not shown or findings were not acknowledged.
     case incompleteConfirmation
+    /// Validation reported errors for the program.
     case blockedProgram
+    /// The run was cancelled before a ready program was prepared.
     case cancelledProgram
+    /// Simulation left violations that block the write.
     case unacknowledgedViolations
 
+    /// Operator-facing text for this refusal reason.
     public var userMessage: String {
         switch self {
         case .notReady:
@@ -37,6 +45,8 @@ public enum PipelineError: Error, Equatable, Sendable {
 /// The actor owns the provenance of programs it prepared so a `.blocked` or `.cancelled` run can
 /// never be turned into a file by a later commit (D10). No stage other than `ProgramWriter` touches
 /// the filesystem, and `run` never calls it.
+///
+/// - Concurrency: Actor-isolated; `run` and `commit` serialize access to the prep record.
 public actor ToolpathService: PipelineRunning {
     private let planner: any ToolpathPlanning
     private let renderer: any GCodeRendering
@@ -45,6 +55,9 @@ public actor ToolpathService: PipelineRunning {
     private let writer: any ProgramWriter
     private var prepared: [ProgramKey: Preparation] = [:]
 
+    /// Creates a service with injected stage collaborators.
+    ///
+    /// - Concurrency: Creates the actor; later `run` and `commit` calls require `await`.
     public init(
         planner: any ToolpathPlanning,
         renderer: any GCodeRendering,
@@ -63,6 +76,8 @@ public actor ToolpathService: PipelineRunning {
     ///
     /// - Throws: A stage error for a planning, rendering, or simulation failure. Cancellation is
     ///   returned as `.cancelled`, not thrown.
+    /// - Concurrency: Actor-isolated `async`; checks cancellation between stages and returns
+    ///   `.cancelled` rather than throwing when stopped.
     public func run(
         _ request: GenerationRequest,
         progress: ProgressSink
@@ -121,6 +136,9 @@ public actor ToolpathService: PipelineRunning {
     ///
     /// - Throws: `PipelineError` when confirmation, provenance, or validation refuses the write;
     ///   the writer's error when the atomic write fails.
+    /// - Precondition: The program must come from this actor's `.ready` run with preview shown,
+    ///   findings acknowledged, no violations, and no cancellation (FR-064, FR-066).
+    /// - Concurrency: Actor-isolated `async`; serializes with `run` so provenance cannot be bypassed.
     public func commit(
         _ program: RenderedProgram,
         confirmation: WriteConfirmation,

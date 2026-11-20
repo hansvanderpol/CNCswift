@@ -9,10 +9,12 @@ import SwiftUI
 public struct CutterEditor: View {
     private let model: CutterEditorModel
 
+    /// Creates the form bound to `model` and its text fields.
     public init(model: CutterEditorModel) {
         self.model = model
     }
 
+    /// The type picker, required fields, and the first validation error.
     public var body: some View {
         Form {
             Section("Cutter type") {

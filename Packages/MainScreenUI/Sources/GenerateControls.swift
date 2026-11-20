@@ -8,10 +8,12 @@ import SwiftUI
 public struct GenerateControls: View {
     private let model: MainScreenModel
 
+    /// Creates the generation controls bound to `model`.
     public init(model: MainScreenModel) {
         self.model = model
     }
 
+    /// The pre-generation checklist, progress, generate and cancel buttons, and status.
     public var body: some View {
         VStack(alignment: .leading, spacing: 10) {
             Divider()

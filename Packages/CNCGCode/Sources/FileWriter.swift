@@ -7,6 +7,8 @@ import Foundation
 /// generation record's model basename under `contracts/gcode-output.md`. Existing files are
 /// replaced atomically through the injected file system; cancellation is checked before any bytes
 /// are made visible.
+///
+/// - Concurrency: `Sendable` value type; safe to share across concurrency boundaries.
 public struct FileWriter: ProgramWriter, Sendable {
     private let fileSystem: any FileSystem
 
@@ -24,6 +26,7 @@ public struct FileWriter: ProgramWriter, Sendable {
     ///   - url: A URL whose parent directory receives the derived output file.
     /// - Throws: `CancellationError` if cancelled before the write, or the file system's error if
     ///   the atomic write fails. No partial file is left behind on failure.
+    /// - Concurrency: `async`; checks cancellation before exposure of the written file.
     public func write(_ program: RenderedProgram, to url: URL) async throws {
         try Task.checkCancellation()
 

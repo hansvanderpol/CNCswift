@@ -7,11 +7,19 @@ import CNCGeometry
 /// Vertices are laid out row-major, one per heightmap sample, at
 /// `origin + (column * resolution, row * resolution, height)`. Two triangles are emitted per grid
 /// quad, wound counter-clockwise when viewed from above so the untouched surface faces up.
+///
+/// - Concurrency: Sendable value safe to pass across concurrency boundaries.
 public struct PreviewMesh: Sendable, Equatable {
+    /// Row-major mesh positions, one per heightmap sample, in stock space.
     public let vertices: [Vec3]
+    /// Computed unit surface normals parallel to `vertices`.
     public let normals: [Vec3]
+    /// Triangle indices, six per grid quad, wound counter-clockwise from above.
     public let indices: [UInt32]
 
+    /// Builds a triangle mesh from the heightmap's samples.
+    ///
+    /// Missing heights are treated as zero and edge samples clamp to the nearest cell.
     public init(heightmap: Heightmap) {
         let columns = max(0, heightmap.columns)
         let rows = max(0, heightmap.rows)

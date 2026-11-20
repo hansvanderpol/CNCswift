@@ -1,11 +1,17 @@
 import Foundation
 
 /// The machine's inclusive X/Y/Z working volume, in millimetres.
+///
+/// - Concurrency: Immutable and `Sendable`; safe to pass between tasks.
 public struct Envelope: Equatable, Sendable, Codable {
+    /// The inclusive extent along X, in millimetres.
     public let x: Double
+    /// The inclusive extent along Y, in millimetres.
     public let y: Double
+    /// The inclusive extent along Z, in millimetres.
     public let z: Double
 
+    /// Creates an envelope from its X, Y, and Z extents.
     public init(x: Double, y: Double, z: Double) {
         self.x = x
         self.y = y
@@ -14,13 +20,21 @@ public struct Envelope: Equatable, Sendable, Codable {
 }
 
 /// Limits that all generated programs must respect, sourced from the profile document.
+///
+/// - Concurrency: Immutable and `Sendable`; safe to pass between tasks.
 public struct MachineLimits: Equatable, Sendable, Codable {
+    /// The highest permitted cutting feed rate.
     public let maxFeedRate: Double
+    /// The highest permitted rapid travel rate.
     public let maxRapidRate: Double
+    /// The lowest permitted spindle speed.
     public let spindleMin: Double
+    /// The highest permitted spindle speed.
     public let spindleMax: Double
+    /// The maximum number of characters in one generated line.
     public let maxLineLength: Int
 
+    /// Creates a limit set from the decoded profile values.
     public init(
         maxFeedRate: Double,
         maxRapidRate: Double,
@@ -37,10 +51,15 @@ public struct MachineLimits: Equatable, Sendable, Codable {
 }
 
 /// Descriptive controller settings the operator applies once; never emitted as program text.
+///
+/// - Concurrency: Immutable and `Sendable`; safe to pass between tasks.
 public struct ControllerSetup: Equatable, Sendable, Codable {
+    /// Spindle settings keyed by controller identifier, for example `$30`.
     public let spindleBuffer: [String: Int]
+    /// Rapid-rate settings keyed by controller identifier.
     public let rapidRate: [String: Int]
 
+    /// Creates a controller setup from its setting dictionaries.
     public init(spindleBuffer: [String: Int], rapidRate: [String: Int]) {
         self.spindleBuffer = spindleBuffer
         self.rapidRate = rapidRate
@@ -63,23 +82,44 @@ public enum ProfileError: Error, Equatable, Sendable {
 }
 
 /// The immutable, versioned description of one supported machine and dialect.
+///
+/// - Concurrency: Immutable and `Sendable`; safe to pass between tasks.
 public struct MachineProfile: Equatable, Sendable {
+    /// The stable identifier for this machine profile.
     public let profileID: String
+    /// The human-readable machine name.
     public let displayName: String
+    /// The profile document version.
     public let version: String
+    /// The G-code dialect identifier this profile targets.
     public let dialect: String
+    /// The machine's working volume.
     public let envelope: Envelope
+    /// The limits applied to generated programs.
     public let limits: MachineLimits
+    /// The one-time controller settings.
     public let controllerSetup: ControllerSetup
+    /// The tool-activation mode declared by the profile.
     public let toolActivation: String
+    /// The safe height above the workpiece used for traversals.
     public let clearanceZ: Double
+    /// The return height declared by the profile.
     public let returnZ: Double
+    /// The file extension generated programs use.
     public let outputExtension: String
+    /// The program lines emitted before the cutting block.
     public let startBlock: [String]
+    /// The program lines emitted after the cutting block.
     public let stopBlock: [String]
+    /// Supported command tokens grouped by capability.
     public let supportedCommands: [String: [String]]
+    /// Command tokens the dialect explicitly rejects.
     public let unsupportedCommands: [String]
 
+    /// Creates a profile from already validated fields.
+    ///
+    /// - Precondition: The caller must satisfy the invariants validated by `decode(_:)`;
+    ///   this initializer does not check them.
     public init(
         profileID: String,
         displayName: String,
@@ -115,6 +155,11 @@ public struct MachineProfile: Equatable, Sendable {
     }
 
     /// Decodes a profile document and rejects it when any startup invariant fails.
+    ///
+    /// - Throws: `ProfileError` when the JSON is malformed or any startup invariant fails,
+    ///   including unsupported dialect, tool activation, output extension or feed mode,
+    ///   invalid limits, inverted spindle range, inconsistent controller settings,
+    ///   conflicting commands, or an invalid start/stop block.
     public static func decode(_ data: Data) throws -> MachineProfile {
         let document: ProfileDocument
         do {
@@ -210,6 +255,8 @@ public struct MachineProfile: Equatable, Sendable {
 /// The shipped TwoTrees TTC450 PRO profile, loaded from the bundled JSON document.
 public enum TTC450Pro {
     /// The validated profile used throughout the app.
+    ///
+    /// - Concurrency: A lazily initialized immutable static, safe to access from any task.
     public static let profile: MachineProfile = {
         guard
             let url = Bundle.module.url(forResource: "ttc450-pro", withExtension: "json"),

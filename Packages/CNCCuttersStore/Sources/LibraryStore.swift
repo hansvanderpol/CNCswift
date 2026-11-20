@@ -6,9 +6,13 @@ import Foundation
 ///
 /// The document is `{ "schemaVersion": n, "payload": { "cutters": [...] } }`; the schema version
 /// and durability rules are owned by `CNCStorage` (FR-051).
+///
+/// - Concurrency: `Sendable` value type; safe to pass across concurrency boundaries.
 public struct CutterLibraryDocument: Codable, Equatable, Sendable {
+    /// The cutters stored in the document.
     public var cutters: [Cutter]
 
+    /// Creates a document containing the given cutters.
     public init(cutters: [Cutter]) {
         self.cutters = cutters
     }
@@ -18,6 +22,8 @@ public struct CutterLibraryDocument: Codable, Equatable, Sendable {
 ///
 /// Only a migration failure throws; `absent`, `refused`, and `corrupt` are reported with the path
 /// that produced them so the UI can explain what happened (FR-053, FR-054).
+///
+/// - Concurrency: `Sendable` value type; safe to pass across concurrency boundaries.
 public enum CutterLibraryLoadOutcome: Sendable, Equatable {
     /// The document was read at the current schema version.
     case loaded([Cutter])
@@ -40,6 +46,8 @@ public enum CutterLibraryLoadOutcome: Sendable, Equatable {
 /// The actor owns the change stream and all reads and writes, so no view or planner can mutate the
 /// library directly. Reads and writes are path-parameterised: the composition root decides where
 /// the library lives (FR-051).
+///
+/// - Concurrency: An actor; reads and writes are serialized and callers use `await`.
 public actor CutterLibraryStore {
     private let store: VersionedStore<CutterLibraryDocument>
     private let changeRegistry = LibraryChangeRegistry()
@@ -73,6 +81,7 @@ public actor CutterLibraryStore {
     ///
     /// - Throws: `StorageError.migrationFailed` when a forward migration cannot complete; the
     ///   stored file is never modified by a load.
+    /// - Concurrency: Actor-isolated; call with `await` from outside the actor.
     public func load(from url: URL) async throws -> CutterLibraryLoadOutcome {
         switch try store.load(from: url) {
         case .absent:
@@ -91,6 +100,7 @@ public actor CutterLibraryStore {
     /// Writes the whole library atomically and publishes `.saved` only after the write succeeds.
     ///
     /// - Throws: A storage error when the write fails; no event is published in that case.
+    /// - Concurrency: Actor-isolated; call with `await` from outside the actor.
     public func save(_ cutters: [Cutter], to url: URL) async throws {
         try store.save(CutterLibraryDocument(cutters: cutters), to: url)
         changeRegistry.publish(.saved)
@@ -100,6 +110,7 @@ public actor CutterLibraryStore {
     ///
     /// An unreadable document is never overwritten: a refused or corrupt library is left exactly
     /// as it was until the user resolves it.
+    /// - Concurrency: Actor-isolated; call with `await` from outside the actor.
     public func delete(id: CutterID, from url: URL) async throws {
         let existing: [Cutter]
         switch try store.load(from: url) {
@@ -119,6 +130,7 @@ public actor CutterLibraryStore {
     }
 
     /// Re-reads the library and publishes `.reloaded`.
+    /// - Concurrency: Actor-isolated; call with `await` from outside the actor.
     public func reload(from url: URL) async throws -> CutterLibraryLoadOutcome {
         let outcome = try await load(from: url)
         changeRegistry.publish(.reloaded)

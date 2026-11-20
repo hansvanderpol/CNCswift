@@ -8,6 +8,9 @@ import Foundation
 extension GCodeEmitter {
     /// Renders one deterministic program: fixed header, profile start block, move lines, profile
     /// stop block, and a trailing newline after `M30`.
+    /// - Precondition: `toolpath` contains at least one move.
+    /// - Throws: `RenderingError` for an empty toolpath, a non-ASCII line, or an over-long
+    ///   line.
     public func render(
         _ toolpath: Toolpath,
         cutter: Cutter,

@@ -12,6 +12,9 @@ fi
 echo "==> Format lint"
 swift format lint --configuration .swift-format --recursive Package.swift App Packages
 
+echo "==> DocC gate"
+python3 Scripts/check-docc.py
+
 echo "==> Offline audit"
 bash Scripts/offline-audit.sh
 

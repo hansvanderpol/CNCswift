@@ -19,15 +19,24 @@ import Foundation
 /// swept, so they cannot remove material (FR-063). Cancellation is an outcome, not an error
 /// (FR-066): a stop on request returns a result with `cancelled` set, alongside whatever partial
 /// heightmap was produced up to that point.
+///
+/// - Concurrency: Sendable value; `simulate` is async and cancellation-aware.
 public struct ZMapSimulator: MaterialRemovalSimulating, Sendable {
     /// Stock-space millimetres per grid cell. Must be finite and greater than zero.
     public let resolution: Double
 
+    /// Creates a simulator with the given stock-space grid spacing.
+    ///
+    /// - Precondition: `resolution` is finite and greater than zero; enforced by `precondition`.
     public init(resolution: Double) {
         precondition(resolution.isFinite && resolution > 0, "resolution must be a positive number")
         self.resolution = resolution
     }
 
+    /// Sweeps cutting moves into a heightmap and reports stage progress.
+    ///
+    /// - Throws: No errors are raised locally; cancellation is reported in the result.
+    /// - Concurrency: `async`; checks cancellation between moves and yields every 32 moves.
     public func simulate(
         _ program: ParsedProgram,
         job: JobSettings,

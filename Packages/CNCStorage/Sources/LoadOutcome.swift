@@ -4,6 +4,8 @@ import Foundation
 ///
 /// `absent`, `refused`, and `corrupt` are reported rather than thrown, because they are states a
 /// store must surface to the user while keeping the on-disk bytes intact (FR-053, FR-054).
+///
+/// - Concurrency: A `Sendable` value when `Document` is; safe to pass between tasks.
 public enum LoadOutcome<Document: Sendable>: Sendable {
     /// No document exists at the expected path; the caller starts from its empty state.
     case absent

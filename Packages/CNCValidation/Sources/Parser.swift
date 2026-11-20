@@ -6,7 +6,10 @@ import Foundation
 ///
 /// The parser owns its own grammar; it never calls the emitter and takes only `String` input.
 /// Conformance problems are returned as findings rather than thrown so the UI can list them all.
+///
+/// - Concurrency: `Sendable` value type; safe to share across concurrency boundaries.
 public struct GRBLParser: Sendable {
+    /// Creates a parser with no stored state.
     public init() {}
 
     /// Parses one program against the supplied profile.

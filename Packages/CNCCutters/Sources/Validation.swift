@@ -1,18 +1,37 @@
 import Foundation
 
+/// Reasons a cutter definition can fail validation.
+///
+/// - Concurrency: `Sendable` error value; safe to pass across concurrency boundaries.
 public enum CutterValidationError: Error, Equatable, Sendable {
+    /// A field required for the cutter type is absent.
     case missingField(String)
+    /// A field that must be absent for the cutter type is present.
     case forbiddenField(String)
+    /// A dimension is negative, or zero where a positive value is required.
     case nonPositive(String)
+    /// The flute count is outside the supported range.
     case invalidFluteCount
+    /// The feed rate is outside the supported range.
     case feedOutOfRange
+    /// The spindle speed is outside the supported range.
     case spindleOutOfRange
+    /// The cutter's name is empty or whitespace only.
     case emptyName
+    /// The shank is narrower than the required cutting extent.
     case shankTooSmall(required: Double)
+    /// The V-bit included angle is not within the supported range.
     case invalidAngle
 }
 
+/// Validates cutter definitions against the machine's accepted ranges.
 public enum CutterValidator {
+    /// Checks a cutter's name, dimensions, settings, and type-specific fields.
+    ///
+    /// - Throws: `CutterValidationError` for an empty name, non-positive or out-of-range
+    ///   dimensions, a flute count outside 1...8, feed or spindle outside their ranges,
+    ///   missing or forbidden type-specific fields, an invalid V-bit angle or tip, or a
+    ///   shank narrower than the cutting extent.
     public static func validate(_ cutter: Cutter) throws {
         guard !cutter.name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
             throw CutterValidationError.emptyName

@@ -32,9 +32,10 @@
 Run from the repository root:
 
 ```bash
-Scripts/ci.sh                       # format lint, workspace build, then all 16 package test suites
+Scripts/ci.sh                       # format lint, DocC gate, offline audit, workspace build, then all 16 package test suites
 swift build                         # build the workspace and CNCswiftApp
 swift format lint --configuration .swift-format --recursive Package.swift App Packages
+python3 Scripts/check-docc.py        # fail when a public declaration lacks an immediately preceding DocC comment
 swift format format --configuration .swift-format --in-place --recursive Package.swift App Packages
 PLUGIN="$(xcode-select -p)/usr/lib/swift/host/plugins/testing/libTestingMacros.dylib"
 swift test --package-path Packages/<Module> -Xswiftc -load-plugin-library -Xswiftc "$PLUGIN"

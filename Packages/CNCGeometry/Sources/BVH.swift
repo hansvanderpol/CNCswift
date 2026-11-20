@@ -1,5 +1,8 @@
 import Foundation
 
+/// A bounding-volume hierarchy over a mesh for downward surface-height queries.
+///
+/// - Concurrency: `Sendable` value type; safe to share across tasks.
 public struct BVH: Sendable {
     private let root: Node?
 
@@ -15,10 +18,12 @@ public struct BVH: Sendable {
         }
     }
 
+    /// Builds a hierarchy from the given mesh.
     public init(mesh: Mesh) {
         self.root = BVH.build(Array(mesh.triangles))
     }
 
+    /// Returns the highest surface Z at `(x, y)`, or `nil` when no triangle covers the point.
     public func surfaceHeight(x: Double, y: Double) -> Double? {
         guard let root else { return nil }
         var highest: Double?

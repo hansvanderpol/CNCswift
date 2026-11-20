@@ -4,6 +4,8 @@ import Foundation
 ///
 /// Tests inject an in-memory implementation so persistence behaviour is proven without touching
 /// real time or the real Application Support directory (Principle III, research D9).
+///
+/// - Concurrency: Conformers are `Sendable` so stores can be captured across tasks.
 public protocol FileSystem: Sendable {
     /// Reads the complete contents of `url`.
     func read(_ url: URL) throws -> Data
@@ -25,6 +27,8 @@ public protocol FileSystem: Sendable {
 }
 
 /// Errors the versioned store raises when durability cannot be guaranteed (FR-052, FR-054).
+///
+/// - Concurrency: Immutable and `Sendable`; safe to throw across task boundaries.
 public enum StorageError: Error, Equatable, Sendable {
     /// A forward migration step failed, so the document was left untouched.
     case migrationFailed(version: Int, detail: String)
@@ -34,13 +38,23 @@ public enum StorageError: Error, Equatable, Sendable {
 }
 
 /// The production file system, backed by `FileManager`.
+///
+/// - Concurrency: Immutable and `Sendable`; safe to share across tasks.
 public struct DiskFileSystem: FileSystem {
+    /// Creates a file system backed by the process `FileManager`.
     public init() {}
 
+    /// Reads the complete contents at `url`.
+    ///
+    /// - Throws: The underlying `Data(contentsOf:)` error when the file cannot be read.
     public func read(_ url: URL) throws -> Data {
         try Data(contentsOf: url)
     }
 
+    /// Atomically writes `data` to `url`, creating parent directories as needed.
+    ///
+    /// - Throws: `StorageError.writeFailed` when the temporary write or move fails, or a
+    ///   `FileManager` error when a parent directory cannot be created.
     public func write(_ data: Data, to url: URL) throws {
         let directory = url.deletingLastPathComponent()
         try FileManager.default.createDirectory(
@@ -57,6 +71,10 @@ public struct DiskFileSystem: FileSystem {
         }
     }
 
+    /// Replaces `url` with `data`, copying the previous bytes to `backupURL`.
+    ///
+    /// - Throws: `StorageError.writeFailed` when the write or replacement fails, or a
+    ///   `FileManager` error when a parent directory cannot be created.
     public func replace(_ data: Data, at url: URL, backupURL: URL) throws {
         let directory = url.deletingLastPathComponent()
         try FileManager.default.createDirectory(
@@ -83,10 +101,14 @@ public struct DiskFileSystem: FileSystem {
         }
     }
 
+    /// Reports whether a file exists at `url`.
     public func exists(_ url: URL) -> Bool {
         FileManager.default.fileExists(atPath: url.path)
     }
 
+    /// Removes the file at `url` if one exists.
+    ///
+    /// - Throws: The underlying `FileManager` error when removal fails.
     public func remove(_ url: URL) throws {
         guard FileManager.default.fileExists(atPath: url.path) else { return }
         try FileManager.default.removeItem(at: url)

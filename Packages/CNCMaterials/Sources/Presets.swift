@@ -1,4 +1,6 @@
+/// The built-in material library shipped with the app.
 public enum Presets {
+    /// All shipped materials, each marked with its built-in origin.
     public static let all: [Material] = [
         Material(
             id: "preset-softwood",

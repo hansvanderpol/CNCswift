@@ -5,6 +5,9 @@ import Foundation
 ///
 /// The store owns no policy about the payload. The cutter library and the material library both
 /// use this type so their durability contract cannot drift.
+///
+/// - Concurrency: Immutable and `Sendable`; the file system and migrations are
+///   `@Sendable`.
 public struct VersionedStore<Payload: Codable & Sendable>: Sendable {
     private let fileSystem: any FileSystem
     private let currentVersion: Int
@@ -69,6 +72,10 @@ public struct VersionedStore<Payload: Codable & Sendable>: Sendable {
     ///
     /// The write replaces the document in one step and retains the previous file at
     /// `<url>.backup` (FR-051, FR-054).
+    ///
+    /// - Throws: An encoding error when `payload` cannot be encoded, or a `FileSystem` error
+    ///   such as `StorageError.writeFailed` when the document cannot be written or
+    ///   replaced.
     public func save(_ payload: Payload, to url: URL) throws {
         let envelope = DocumentEnvelope(payload: payload, schemaVersion: currentVersion)
         let data = try encoder.encode(envelope)

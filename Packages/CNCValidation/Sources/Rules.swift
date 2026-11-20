@@ -5,7 +5,10 @@ import Foundation
 ///
 /// Findings carry stable rule identifiers and one-based source lines. Any error-severity finding
 /// blocks the commit path; conformance problems are reported rather than thrown.
+///
+/// - Concurrency: `Sendable` value type; safe to share across concurrency boundaries.
 public struct ValidationRules: Sendable {
+    /// Creates a rule evaluator with no stored state.
     public init() {}
 
     /// Evaluates every semantic rule against one parsed program.

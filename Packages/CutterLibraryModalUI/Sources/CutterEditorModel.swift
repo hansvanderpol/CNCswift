@@ -5,6 +5,8 @@ import Observation
 /// The input fields of a cutter editor form.
 ///
 /// A field's raw value is its persisted key, which is what validation messages name (FR-048).
+///
+/// - Concurrency: Sendable value; safe to pass across tasks.
 public enum CutterField: String, CaseIterable, Sendable, Hashable {
     case name
     case shankDiameter
@@ -39,15 +41,22 @@ public enum CutterField: String, CaseIterable, Sendable, Hashable {
 /// The model owns only text fields for one record. It never touches the store: a caller uses
 /// `makeCutter()` and hands the resulting value to a coordinator. Every error is computed from
 /// the current field text so the UI can name the broken rule and its limit before saving.
+///
+/// - Concurrency: Main-actor isolated; observed directly by SwiftUI.
 @Observable
 @MainActor
 public final class CutterEditorModel {
     /// The cutter type whose dimension fields are requested by `requiredFields()`.
+    ///
+    /// - Concurrency: Main-actor isolated observable state.
     public var type: CutterType
 
     /// Raw text entered by the user, keyed by field.
+    ///
+    /// - Concurrency: Main-actor isolated observable state.
     public var fields: [CutterField: String]
 
+    /// Creates an editor with the given type and initial field text.
     public init(type: CutterType = .flat, fields: [CutterField: String] = [:]) {
         self.type = type
         self.fields = fields

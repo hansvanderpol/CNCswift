@@ -6,16 +6,22 @@ import Foundation
 ///
 /// The editor does not keep its own copy of the library: both the modal and the main screen
 /// re-resolve cutters from the store (research D14).
+///
+/// - Concurrency: Sendable value; safe to pass across tasks.
 public struct CutterLibraryCoordinator: Sendable {
     private let store: CutterLibraryStore
     private let libraryURL: URL
 
+    /// Creates a coordinator that writes through `store` to `libraryURL`.
     public init(store: CutterLibraryStore, libraryURL: URL) {
         self.store = store
         self.libraryURL = libraryURL
     }
 
     /// Creates or replaces one cutter by stable identifier without relaunch (FR-042, FR-050).
+    ///
+    /// - Throws: An error from loading or saving the persisted library.
+    /// - Concurrency: Sendable coordinator; awaits the store's asynchronous load and save.
     public func save(_ cutter: Cutter) async throws {
         let existing: [Cutter]
         switch try await store.load(from: libraryURL) {

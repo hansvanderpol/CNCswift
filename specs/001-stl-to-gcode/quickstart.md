@@ -44,6 +44,15 @@ swift format lint --recursive Packages App
 
 Expected: no findings. This gate is part of the definition of done (constitution, Development Workflow).
 
+## Documentation gate
+
+```bash
+python3 Scripts/check-docc.py
+```
+
+Expected: every public declaration has an immediately preceding DocC comment. This enforces
+constitution Principle V and runs automatically from `Scripts/ci.sh`.
+
 ## Run
 
 ```bash
@@ -149,3 +158,20 @@ Out of scope for automation, but recommended once:
 3. Confirm the controller raises no `error:11` (line length) and no `error:20` (unsupported command), and that rapids move at the expected rate.
 
 The app never drives the machine (FR-030) and never sends or changes a controller setting.
+
+## Validation results (2026-11-20)
+
+Full pass/fail evidence for VS-1 through VS-10 is recorded in
+[validation-evidence.md](./validation-evidence.md). Summary:
+
+- VS-2, VS-3, VS-4, VS-6, VS-7, VS-9 and VS-10 pass through automated suites.
+- VS-5 passes its automated five-fixture timing check; visual inspection is a desktop step.
+- VS-8 passes its automated cancellation and static offline checks; full-session network sampling
+  is a desktop step.
+- VS-1 is **blocked end to end**: real generation places the cutter margin outside the envelope.
+  See [performance-evidence.md](./performance-evidence.md) for the measurement and the finding.
+
+Performance evidence lives in [performance-evidence.md](./performance-evidence.md), bundle signing
+and entitlement verification in [bundle-verification.md](./bundle-verification.md), and the
+accessibility/network desktop steps in [accessibility-audit.md](./accessibility-audit.md) and
+[offline-audit.md](./offline-audit.md).

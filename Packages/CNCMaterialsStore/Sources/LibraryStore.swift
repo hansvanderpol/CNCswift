@@ -5,17 +5,33 @@ import Foundation
 /// The state of a stored user-material document.
 ///
 /// `absent`, `refused`, and `corrupt` are reported, not thrown, so the original bytes stay intact.
+///
+/// - Concurrency: `Sendable` value type; safe to pass across concurrency boundaries.
 public enum MaterialLibraryLoadOutcome: Sendable, Equatable {
+    /// No document exists yet; the library is empty.
     case absent
+    /// The document was read at the current schema version.
     case loaded([Material])
+    /// The document was migrated forward from an older schema version.
     case migrated(from: Int, materials: [Material])
+    /// The document is newer than this app supports and was left unchanged.
     case refused(found: Int)
+    /// The document could not be decoded; the path is reported for diagnostics.
     case corrupt(path: String)
 }
 
 /// Persistence for user-defined materials; built-in presets are merged at load time.
+///
+/// - Concurrency: `Sendable` protocol with async requirements, safe to call from any actor.
 public protocol MaterialLibraryStoring: Sendable {
+    /// Loads the stored user materials, reporting absent, corrupt, or refused documents.
+    ///
+    /// - Throws: A storage error when the document cannot be read or migrated.
     func load(from url: URL) async throws -> MaterialLibraryLoadOutcome
+    /// Validates and atomically saves the user materials.
+    ///
+    /// - Throws: `MaterialValidationError` for invalid or colliding materials, or a
+    ///   `StorageError` when the write fails.
     func save(_ materials: [Material], to url: URL) async throws
 
     /// The shipped presets plus every stored user material, with no preset shadowed.
@@ -30,6 +46,8 @@ private struct MaterialLibraryDocument: Codable, Equatable, Sendable {
 ///
 /// Presets are code-shipped and never written to the document. A stored material that collides with
 /// a preset is ignored on load and rejected on save, so user data can never shadow a shipped band.
+///
+/// - Concurrency: `Sendable` value type; its async methods are safe to call from any actor.
 public struct MaterialLibraryStore: MaterialLibraryStoring {
     private let store: VersionedStore<MaterialLibraryDocument>
 
@@ -54,6 +72,7 @@ public struct MaterialLibraryStore: MaterialLibraryStoring {
     /// Loads only user materials from a versioned document.
     ///
     /// - Throws: `StorageError.migrationFailed` when a required forward migration is missing.
+    /// - Concurrency: Async and nonisolated; safe to call from any concurrency domain.
     public func load(from url: URL) async throws -> MaterialLibraryLoadOutcome {
         switch try store.load(from: url) {
         case .absent:
@@ -74,6 +93,7 @@ public struct MaterialLibraryStore: MaterialLibraryStoring {
     ///
     /// - Throws: `MaterialValidationError` for empty names, inverted bands, or collisions with a
     ///   preset or another saved material; `StorageError` when the atomic write fails.
+    /// - Concurrency: Async and nonisolated; safe to call from any concurrency domain.
     public func save(_ materials: [Material], to url: URL) async throws {
         var accepted = Presets.all
         for material in materials {
@@ -87,6 +107,7 @@ public struct MaterialLibraryStore: MaterialLibraryStoring {
     ///
     /// Documents that are absent, corrupt, or from a newer schema are never rewritten; the shipped
     /// presets are still returned so the UI can start in a usable state.
+    /// - Concurrency: Async and nonisolated; safe to call from any concurrency domain.
     public func resolvedMaterials(from url: URL) async throws -> [Material] {
         let stored: [Material]
         switch try await load(from: url) {

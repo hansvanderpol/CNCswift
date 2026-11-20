@@ -13,6 +13,7 @@ public struct LibraryModal: View {
     private let model: LibraryModalModel
     private let editor: CutterEditorModel
 
+    /// Creates the modal with the shared cutter `store` and its `libraryURL`.
     public init(store: CutterLibraryStore, libraryURL: URL) {
         self.store = store
         self.libraryURL = libraryURL
@@ -21,6 +22,9 @@ public struct LibraryModal: View {
     }
 
     /// Reads the persisted cutters directly, independent of any presented view state.
+    ///
+    /// - Throws: An error from the store when the library cannot be loaded.
+    /// - Concurrency: Main-actor isolated; awaits the store's asynchronous load.
     public func loadCutters() async throws -> [Cutter] {
         switch try await store.load(from: libraryURL) {
         case .loaded(let cutters), .migrated(_, let cutters):
@@ -30,6 +34,7 @@ public struct LibraryModal: View {
         }
     }
 
+    /// The cutter list, editor, Add action, and any library error message.
     public var body: some View {
         NavigationStack {
             VStack(alignment: .leading, spacing: 12) {

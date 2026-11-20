@@ -24,10 +24,12 @@ public struct SimulationPanel: View {
 
     private let model: MainScreenModel
 
+    /// Creates the preview panel bound to `model`.
     public init(model: MainScreenModel) {
         self.model = model
     }
 
+    /// The findings list, 3D preview, write action, and keyboard navigation controls.
     public var body: some View {
         GroupBox {
             VStack(alignment: .leading, spacing: 8) {

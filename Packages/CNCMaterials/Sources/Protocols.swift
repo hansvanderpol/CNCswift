@@ -5,6 +5,8 @@ import CNCMachineProfile
 ///
 /// Pure and synchronous: the same material, cutter, and profile always produce the same outcome,
 /// and no planner or view can bypass it.
+///
+/// - Concurrency: Conformers are `Sendable` and may be shared across concurrency boundaries.
 public protocol MaterialResolving: Sendable {
     /// Intersects the material bands with the profile limits and prefills from the cutter record.
     ///
@@ -18,9 +20,15 @@ public protocol MaterialResolving: Sendable {
 }
 
 /// The default resolver, delegating to `EffectiveCuttingValues.resolve`.
+///
+/// - Concurrency: `Sendable` value type; safe to share across concurrency boundaries.
 public struct MaterialResolver: MaterialResolving {
+    /// Creates the default resolver.
     public init() {}
 
+    /// Delegates to `EffectiveCuttingValues.resolve` with the supplied inputs.
+    ///
+    /// - Returns: Resolved cutting values or the conflicting bands.
     public func resolve(
         material: Material,
         cutter: Cutter,

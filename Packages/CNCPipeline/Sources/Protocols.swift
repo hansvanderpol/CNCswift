@@ -13,6 +13,8 @@ import Foundation
 ///
 /// The request is a value snapshot: a successful run never reads the libraries, the clock, or the
 /// filesystem again.
+///
+/// - Concurrency: Sendable snapshot safe to pass to the pipeline actor.
 public struct GenerationRequest: Sendable {
     /// The decoded model, in model space.
     public let model: MeshDocument
@@ -20,8 +22,11 @@ public struct GenerationRequest: Sendable {
     /// The confirmed job binding the model, stock, cutter, material, and strategy.
     public let job: JobSettings
 
+    /// The cutter selected for this generation job.
     public let cutter: Cutter
+    /// The material selected for this generation job.
     public let material: Material
+    /// The machine profile constraining planning, validation, and simulation.
     public let profile: MachineProfile
 
     /// Where `commit` may write the program; `run` never writes to it.
@@ -30,6 +35,7 @@ public struct GenerationRequest: Sendable {
     /// The injected clock reading recorded in the header (Principle III, FR-028).
     public let generatedAt: Date
 
+    /// Creates an immutable request snapshot from the model, job, tooling, and destination.
     public init(
         model: MeshDocument,
         job: JobSettings,
@@ -53,6 +59,8 @@ public struct GenerationRequest: Sendable {
 ///
 /// A `.ready` outcome alone is not permission to write: `commit` also requires this value
 /// (spec clarification Q6, FR-064).
+///
+/// - Concurrency: Sendable value safe to pass to the commit gate.
 public struct WriteConfirmation: Sendable, Equatable {
     /// The 3D preview was shown to the user.
     public let previewShown: Bool
@@ -60,6 +68,7 @@ public struct WriteConfirmation: Sendable, Equatable {
     /// Every finding and simulation violation was acknowledged.
     public let findingsAcknowledged: Bool
 
+    /// Creates a confirmation recording the two required user acknowledgements.
     public init(previewShown: Bool, findingsAcknowledged: Bool) {
         self.previewShown = previewShown
         self.findingsAcknowledged = findingsAcknowledged
@@ -70,19 +79,27 @@ public struct WriteConfirmation: Sendable, Equatable {
 ///
 /// `ready` carries the validated program and simulation result; the run itself writes nothing.
 /// `blocked` and `cancelled` can never be committed (FR-026, FR-064, FR-069).
+///
+/// - Concurrency: Sendable value safe to return from an asynchronous run.
 public enum PipelineOutcome: Sendable {
+    /// A validated program, its report, and its simulation; eligible for preview and commit.
     case ready(RenderedProgram, ValidationReport, SimulationResult)
+    /// Validation findings that prevent writing.
     case blocked([Finding])
+    /// The run stopped on request; nothing was written.
     case cancelled
 }
 
 /// The orchestration boundary. `CNCPipeline` is the only package that imports every stage.
+///
+/// - Concurrency: Sendable boundary; both requirements are `async` and may run on an actor.
 public protocol PipelineRunning: Sendable {
     /// Decodes, plans, renders, validates, and simulates, in that order, without writing a file.
     ///
     /// - Returns: `.ready` with the values the preview needs, `.blocked` with every finding, or
     ///   `.cancelled` when the run stopped on request.
     /// - Throws: A typed error only for a stage failure that is not a conformance finding.
+    /// - Concurrency: `async`; implementations stop on cancellation and return `.cancelled`.
     func run(
         _ request: GenerationRequest,
         progress: ProgressSink
@@ -95,6 +112,7 @@ public protocol PipelineRunning: Sendable {
     ///   validated program and simulation carry no violations or errors (FR-064, FR-066).
     /// - Throws: A typed error when the confirmation, provenance, findings, violations, or
     ///   simulation state refuses the write; the writer's error when the atomic write fails.
+    /// - Concurrency: `async`; call with `await` when the runner is an actor.
     func commit(
         _ program: RenderedProgram,
         confirmation: WriteConfirmation,

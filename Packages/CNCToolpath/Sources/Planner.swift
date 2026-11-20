@@ -8,7 +8,10 @@ import Foundation
 /// The planner is pure: it reads only the resolved values in `JobSettings`, the injected profile,
 /// and progress/cancellation. Asset lookup and the full stock-reach gate belong to the pipeline,
 /// which calls `Preflight.check` before this type is used.
+///
+/// - Concurrency: `Sendable` value type; safe to share across concurrency boundaries.
 public struct ToolpathPlanner: ToolpathPlanning, Sendable {
+    /// Creates a planner with no stored state.
     public init() {}
 
     /// Plans one deterministic toolpath.
@@ -19,6 +22,7 @@ public struct ToolpathPlanner: ToolpathPlanning, Sendable {
     ///   - progress: The sink used for cancellation and stage progress.
     /// - Throws: `PlanningError` for invalid inputs or `CancellationError` when cancelled.
     /// - Returns: Roughing passes followed by finishing raster passes at the effective feed.
+    /// - Concurrency: `async`; cancellation is reported through `progress`.
     public func plan(
         _ job: JobSettings,
         profile: MachineProfile,

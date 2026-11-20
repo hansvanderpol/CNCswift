@@ -2,42 +2,79 @@ import CNCCutters
 import CNCMachineProfile
 import Foundation
 
+/// Where prefilled effective feed and spindle values came from.
+///
+/// - Concurrency: `Sendable` value type; safe to share across concurrency boundaries.
 public enum EffectiveValueSource: String, Sendable, Equatable {
+    /// Values came directly from the cutter record.
     case cutterPrefill
+    /// At least one value was clamped to the nearest allowed bound.
     case nearestBound
+    /// Values were selected by the user.
     case userChoice
 }
 
+/// Reasons a requested effective value could not be accepted.
+///
+/// - Concurrency: `Sendable` error value; safe to share across concurrency boundaries.
 public enum MaterialResolutionError: Error, Equatable, Sendable {
+    /// The value lies outside the material/profile intersection.
     case outsideIntersection
 }
 
+/// The band that caused a resolution conflict.
+///
+/// - Concurrency: `Sendable` value type; safe to share across concurrency boundaries.
 public enum BandKind: String, Sendable, Equatable {
+    /// The feed band.
     case feed
+    /// The spindle band.
     case spindle
 }
 
+/// One band whose material range cannot satisfy the machine profile.
+///
+/// - Concurrency: `Sendable` value type; safe to share across concurrency boundaries.
 public struct BandConflict: Equatable, Sendable {
+    /// The band that conflicts.
     public let band: BandKind
+    /// A human-readable explanation of the conflict.
     public let message: String
 
+    /// Creates a conflict for a band with an explanatory message.
     public init(band: BandKind, message: String) {
         self.band = band
         self.message = message
     }
 }
 
+/// The result of intersecting material bands with a machine profile.
+///
+/// - Concurrency: `Sendable` value type; safe to share across concurrency boundaries.
 public enum ResolutionOutcome: Equatable, Sendable {
+    /// Valid values with a recorded source and confirmation state.
     case resolved(EffectiveCuttingValues)
+    /// The bands that cannot be satisfied.
     case noOverlap([BandConflict])
 }
 
+/// Effective feed and spindle values for one job, with source and confirmation state.
+///
+/// - Concurrency: `Sendable` value type; safe to share across concurrency boundaries.
 public struct EffectiveCuttingValues: Equatable, Sendable {
+    /// The effective feed rate in mm/min.
     public let feed: Double
+    /// The effective spindle speed in RPM.
     public let spindle: Double
+    /// Where the prefilled values came from.
     public let source: EffectiveValueSource
+    /// Whether the user has confirmed the values.
     public let confirmed: Bool
 
+    /// Creates unconfirmed values, validated against the material/profile intersection.
+    ///
+    /// - Throws: `MaterialResolutionError.outsideIntersection` when feed or spindle lies
+    ///   outside the allowed intersection.
     public init(
         feed: Double,
         spindle: Double,
@@ -78,6 +115,9 @@ public struct EffectiveCuttingValues: Equatable, Sendable {
         )
     }
 
+    /// Resolves material bands against profile limits, prefilling from the cutter.
+    ///
+    /// - Returns: `.resolved` with unconfirmed values, or `.noOverlap` for every conflict.
     public static func resolve(
         material: Material,
         cutter: Cutter,
