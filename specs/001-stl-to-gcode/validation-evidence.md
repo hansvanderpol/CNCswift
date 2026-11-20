@@ -1,6 +1,6 @@
 # Validation evidence — 001-stl-to-gcode
 
-**Feature**: `001-stl-to-gcode` | **Recorded**: 2026-11-20 | **Tasks**: T113, T114
+**Feature**: `001-stl-to-gcode` | **Recorded**: 2026-11-20 | **Tasks**: T113, T114, T120–T124
 
 This record maps the ten quickstart scenarios (VS-1 … VS-10) and the two human-verification
 success criteria (SC-006, SC-009) to executed evidence. Automated results come from `Scripts/ci.sh`
@@ -11,7 +11,7 @@ and the named package suites; desktop-only observations are marked pending rathe
 
 | Scenario | Evidence | Result |
 |---|---|---|
-| VS-1 — STL to `.nc` happy path | `CNCGCode` golden/header/emitter tests, `CNCPipeline` pipeline and commit-gate tests, `CNCValidation` rule tests, `generatedProgramFromAReferenceFixturePassesValidation` (T119) | **PASS (automated)** — see resolution below; GUI file-picker walkthrough is a desktop step |
+| VS-1 — STL to `.nc` happy path | `CNCGCode` golden/header/emitter tests, `CNCPipeline` pipeline and commit-gate tests, `CNCValidation` rule tests, `generatedProgramFromAReferenceFixturePassesValidation` (T119, T120), `Packages/CNCPipeline/Tests/GenerationGoldenTests.swift` (T121) | **PASS (automated)** — see resolution below; GUI file-picker walkthrough is a desktop step |
 | VS-2 — determinism | `Packages/CNCGCode/Tests/DeterminismTests.swift` | PASS (automated) |
 | VS-3 — rejection, not repair | `CNCSTL` decode tests, `CNCToolpath` preflight tests, `CNCMaterials` preset/resolution tests | PASS (automated) |
 | VS-4 — start/stop block integrity | `CNCValidation` parser and rule tests | PASS (automated) |
@@ -29,12 +29,35 @@ Generating from a real reference STL placed the cutter-radius footprint at negat
 200k fixture). The committed golden files start at `X10.000 Y10.000`, so the component tests did not
 exercise that path. Details and timings are in `performance-evidence.md`.
 
-T119 clips the swept region to the stock and machine envelope in `Footprint.make` (FR-038) and
-corrects `spindle-before-origin` to inspect the final origin return rather than the first raster
-rapid through X0 Y0. Regression tests cover an origin-placed toolpath, a program generated from
-`relief-demo-binary.stl`, and raster rapids through the origin. The SC-001 benchmark now reports
-`findings=0` and the generated program has no validation errors. The GUI file-picker walkthrough
+T119 corrected `spindle-before-origin` to inspect the final origin return rather than the first
+raster rapid through X0 Y0. T120 replaces its provisional clip with an explicit placement: the
+model sits one cutter radius inside the stock's front-left corner and the swept centre region is
+expanded by exactly one radius. `Preflight.check` and `checkPlanningInputs` now reject a job whose
+expanded bounds would leave the stock or the machine envelope with
+`PlanningError.insufficientCutterMargin`, whose message names the required 3.000 mm margin;
+`Footprint.make` never clamps. Regression tests cover a rejected origin-placed model, an accepted
+margin-placed model, a program generated from `relief-demo-binary.stl`, and raster rapids through
+the origin. The SC-001 benchmark reports `findings=0` and the generated program has no validation
+errors. T121–T124 add the reviewed pipeline-level golden fixture. The GUI file-picker walkthrough
 still needs a desktop observation; the automated VS-1 path is unblocked.
+
+## Pipeline-level golden review (T121–T124, C1)
+
+`Fixtures/gcode/generation/footprint-margin-relief-demo-binary.nc` is the reviewed golden output of
+the full decode → place → plan → emit path from the unchanged `relief-demo-binary.stl`. It closes C1
+from `/speckit.analyze`: the existing five goldens are emitter-level and could not catch VS-1.
+
+- **Test**: `committedGenerationGoldenMatchesPipelineOutput` in
+  `Packages/CNCPipeline/Tests/GenerationGoldenTests.swift` asserts byte equality, zero validator
+  findings, no errors, and non-negative in-stock X/Y for every move.
+- **Review**: 1,715 ASCII lines, maximum line length 46 (limit 80), fixed `1970-01-01T00:00:00Z`
+  header, profile start/stop blocks with `M30` last, X/Y 0–106.000 inside a 108 mm stock. Full
+  fixed-input list and SHA-256 are recorded in `Fixtures/gcode/README.md`.
+- **Update path**: `Scripts/update-golden.sh` emits a candidate only to gitignored
+  `Fixtures/gcode/.received/` and prints `diff -u`; no test or script overwrites the committed
+  fixture. `Scripts/ci.sh` rejects a modified tracked golden or a tracked `.received/` candidate.
+- **Input integrity**: `git diff --exit-code -- Fixtures/stl/relief-demo-binary.stl` succeeds; the
+  reference STL was not edited.
 
 ## SC-006 — timed empty-library first file (T113)
 

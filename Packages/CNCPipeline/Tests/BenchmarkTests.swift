@@ -19,7 +19,8 @@ import Testing
 /// are recorded in the validation evidence rather than asserted as exact values. The only budgets
 /// asserted are the ones the success criteria state: five minutes for decode plus generation and
 /// five seconds for each preview.
-private enum BenchmarkSupport {
+/// Shared fixed inputs for the evidence harness and the pipeline-level golden test.
+enum BenchmarkSupport {
     static let profile = TTC450Pro.profile
     static let material = Presets.all[1]
     static let referenceModels = [
@@ -67,8 +68,12 @@ private enum BenchmarkSupport {
         ).confirming()
     }
 
-    /// Decodes a fixture and expresses it in the front-left-top machine convention. The 200k
-    /// reference spans the full bed, so its explicit scale action is applied before planning.
+    /// One 6 mm cutter radius; the model is placed this far inside the stock's front-left corner.
+    static let cutterMargin = 3.0
+
+    /// Decodes a fixture and expresses it in the front-left-top machine convention with one cutter
+    /// radius of placement margin. The 200k reference spans the full bed, so its explicit scale
+    /// action is applied before planning.
     static func prepared(_ model: String) async throws -> MeshDocument {
         let url = repositoryRoot()
             .appendingPathComponent("Fixtures", isDirectory: true)
@@ -80,8 +85,8 @@ private enum BenchmarkSupport {
         let originY = decoded.bounds.min.y
         func mapped(_ point: Vec3) -> Vec3 {
             Vec3(
-                x: (point.x - originX) * scale,
-                y: (point.y - originY) * scale,
+                x: (point.x - originX) * scale + cutterMargin,
+                y: (point.y - originY) * scale + cutterMargin,
                 z: point.z * scale
             )
         }

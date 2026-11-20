@@ -243,13 +243,23 @@ Do not silently rewrite `spec.md` while implementing. The clarified spec, `plan.
 
 ---
 
-## Phase 7: Follow-up — VS-1 footprint defect (completed)
+## Phase 7: Follow-up — VS-1 footprint defect and analysis remediation
 
-**Purpose**: Remove the end-to-end blocker found by the SC-001 benchmark without weakening the envelope rule or accepting an uncommittable program.
+**Purpose**: Remove the end-to-end blocker found by the SC-001 benchmark without weakening the envelope rule or accepting an uncommittable program, and close the golden-file gate (C1) raised by `/speckit.analyze`.
 
 - [X] T119 [P] Clip the model-footprint-plus-one-radius region to the stock and machine envelope so an origin-placed model produces committable coordinates, and make `spindle-before-origin` inspect the final origin return instead of a raster rapid through X0 Y0; add regression tests for an origin-placed toolpath, a program generated from a reference STL, and raster rapids through the origin (FR-025, FR-038, FR-064, SC-003, VS-1) — `Packages/CNCToolpath/Sources/Footprint.swift`, `Packages/CNCToolpath/Tests/PlannerTests.swift`, `Packages/CNCValidation/Sources/Rules.swift`, `Packages/CNCValidation/Tests/RuleTests.swift`, `Packages/CNCPipeline/Tests/BenchmarkTests.swift`
 
-**Checkpoint**: `Scripts/ci.sh` green; the SC-001 benchmark reports `findings=0` for the 200k fixture, and a program generated from `relief-demo-binary.stl` validates with no errors.
+- [X] T120 Resolve C2 from `/speckit.analyze` so insufficient cutter margin fails loudly instead of being silently clipped: first record the chosen behaviour in `spec.md` (FR-011, FR-025, FR-038) and `plan.md` — reject a job whose model bounds expanded by one cutter radius would leave the stock or envelope, with an actionable message naming the required margin — then write a failing preflight test in `Packages/CNCToolpath/Tests/PreflightTests.swift` asserting an origin-placed model with a 6 mm cutter is rejected, and implement the named `PlanningError` in `Packages/CNCToolpath/Sources/Preflight.swift` so `Footprint.make` no longer emits a clamped footprint; update the T119 origin-placed regression in `Packages/CNCToolpath/Tests/PlannerTests.swift`, the placement in `Packages/CNCPipeline/Tests/BenchmarkTests.swift`, and the VS-1 resolution note in `specs/001-stl-to-gcode/validation-evidence.md` to match (constitution Principle VI, FR-011, FR-025, FR-038, SC-004, C2) — `specs/001-stl-to-gcode/spec.md`, `specs/001-stl-to-gcode/plan.md`, `Packages/CNCToolpath/Sources/Preflight.swift`, `Packages/CNCToolpath/Sources/Footprint.swift`, `Packages/CNCToolpath/Tests/PreflightTests.swift`, `Packages/CNCToolpath/Tests/PlannerTests.swift`, `Packages/CNCPipeline/Tests/BenchmarkTests.swift`, `specs/001-stl-to-gcode/validation-evidence.md`
+
+- [X] T121 Apply the accepted C1 fix test-first: add `Packages/CNCPipeline/Tests/GenerationGoldenTests.swift` that locates `Fixtures/gcode/generation/footprint-margin-relief-demo-binary.nc` by four `#filePath` `deletingLastPathComponent()` calls (the pattern in `Packages/CNCGCode/Tests/GoldenFileTests.swift:11-16`), generates the program from the unchanged `Fixtures/stl/relief-demo-binary.stl` through the real `STLDecoder` → explicit transform with one 6 mm cutter radius of margin → `ToolpathPlanner` → `GCodeEmitter` path using the fixed inputs in `BenchmarkSupport` (`generatedAt: Date(timeIntervalSince1970: 0)`, cutter `8f3c1d2a-0b7e-4c55-9a1f-2d6e7c8b9a10`, material `Presets.all[1]`, stock and job settings from `BenchmarkSupport.job(for:)`, scale `1.0`), asserts byte equality with the committed golden, asserts `GRBLValidator().validate(...)` has zero findings and no errors, and asserts no move has negative X/Y and every move lies inside the stock and the 460 x 460 x 80 mm envelope; the test must fail on a missing file before T122 (FR-025, FR-028, SC-002, SC-003, C1) — `Packages/CNCPipeline/Tests/GenerationGoldenTests.swift`
+
+- [X] T122 Generate and commit the pipeline-level golden `.nc` required by T121 after T120 has fixed the placement semantics: run the exact generation path and fixed inputs named in T121, write the output to `Fixtures/gcode/generation/footprint-margin-relief-demo-binary.nc`, and confirm `Scripts/ci.sh` passes with the new test green; do not modify `Fixtures/stl/relief-demo-binary.stl` (FR-025, FR-028, SC-002, SC-003, Development Workflow, C1) — `Fixtures/gcode/generation/footprint-margin-relief-demo-binary.nc`
+
+- [X] T123 Make golden verification read-only in CI: add `Scripts/update-golden.sh` that regenerates candidates into gitignored `Fixtures/gcode/.received/` and prints `diff -u` against the committed fixture without ever overwriting it, add `.received/` to `.gitignore`, and extend `Scripts/ci.sh` after the test loop with `git diff --exit-code -- ':(glob)Fixtures/gcode/*.nc' ':(glob)Fixtures/gcode/**/*.nc'` plus a failure if any `.received/` path is tracked; `Scripts/update-golden.sh` sets `CNCSWIFT_GOLDEN_CANDIDATE_DIR` for a candidate-only test, and ordinary `swift test` runs must never mutate committed goldens (FR-027, FR-028, C1) — `Scripts/update-golden.sh`, `Scripts/ci.sh`, `.gitignore`
+
+- [X] T124 Record the C1 production-output review and confirm the input fixture is unchanged: extend `Fixtures/gcode/README.md` beyond its current five emitter-level files with the new generation-level file's fixed inputs, the FR-038/VS-1 behaviour it protects, the `findings=0` validator result, and reviewer and date; link it from `specs/001-stl-to-gcode/validation-evidence.md`; and verify `git diff --exit-code -- Fixtures/stl/relief-demo-binary.stl` succeeds (FR-028, SC-003, Development Workflow, C1) — `Fixtures/gcode/README.md`, `specs/001-stl-to-gcode/validation-evidence.md`
+
+**Checkpoint**: `Scripts/ci.sh` green; the SC-001 benchmark reports `findings=0` for the 200k fixture, a program generated from a reference STL validates with no errors, insufficient margin is rejected with an actionable error (T120), a failing pipeline-level golden test precedes the committed reviewed fixture (T121 → T122), CI cannot mutate goldens (T123), and the production-output review is recorded with `relief-demo-binary.stl` unchanged (T124).
 
 ---
 
@@ -341,15 +351,15 @@ Every requirement is assigned to at least one task.
 | FR-001, FR-002, FR-003, FR-004 | T009, T014, T028 |
 | FR-005, FR-006 | T049, T065, T072 |
 | FR-007, FR-009, FR-012 | T013, T027, T040, T057, T069, T072 |
-| FR-008, FR-010, FR-011 | T049, T065, T071 |
+| FR-008, FR-010, FR-011 | T049, T065, T071, T120 |
 | FR-013, FR-014, FR-015, FR-016 | T012, T026, T109 |
 | FR-017, FR-018 | T012, T026, T043, T044, T045, T057, T059, T109 |
 | FR-019, FR-020, FR-021 | T040, T047, T057 |
-| FR-022, FR-023, FR-024, FR-025 | T012, T017, T041, T043, T047, T049, T058, T071, T119 |
-| FR-026, FR-027, FR-028, FR-029 | T040, T042, T045, T046, T047, T052, T057, T059, T060, T068, T074 |
+| FR-022, FR-023, FR-024, FR-025 | T012, T017, T041, T043, T047, T049, T058, T071, T119, T120, T121, T122 |
+| FR-026, FR-027, FR-028, FR-029 | T040, T042, T045, T046, T047, T052, T057, T059, T060, T068, T074, T121, T122, T123, T124 |
 | FR-030, FR-031 | T012, T026, T044, T047, T108 |
 | FR-032, FR-033, FR-034, FR-035, FR-036 | T048, T062, T063, T064 |
-| FR-037, FR-038, FR-039, FR-041 | T013, T027, T048, T049, T050, T056, T064, T065, T119 |
+| FR-037, FR-038, FR-039, FR-041 | T013, T027, T048, T049, T050, T056, T064, T065, T119, T120, T124 |
 | FR-040 | T017, T048, T055, T056, T071, T073 |
 | FR-042, FR-044, FR-045, FR-046, FR-047, FR-048 | T015, T024, T029, T077, T083, T084 |
 | FR-043, FR-050 | T024, T054, T070 |
@@ -367,8 +377,8 @@ Every requirement is assigned to at least one task.
 | FR-081 | T040, T041, T054, T057 |
 | FR-082 | T043, T047, T057 |
 | SC-001 | T112, T114 |
-| SC-002, SC-003 | T040, T047, T074, T114, T119 |
-| SC-004 | T014, T015, T016, T049, T050, T114 |
+| SC-002, SC-003 | T040, T047, T074, T114, T119, T120, T121, T122, T124 |
+| SC-004 | T014, T015, T016, T049, T050, T114, T120 |
 | SC-005 | T042, T114 |
 | SC-006 | T078, T113, T114 |
 | SC-007 | T054, T079, T114 |
@@ -392,3 +402,4 @@ Every requirement is assigned to at least one task.
 - The four preset band values in T030/T039 are provisional engineering guidance (research D11); T111 records sign-off before they are treated as certified production data.
 - The feature branch is declared in `spec.md` but does not exist in git yet; create `001-stl-to-gcode` before the first implementation commit.
 - Commit after each logical group, keep each pull request small, and run `Scripts/ci.sh` before calling work done.
+- C1 and C2 from `/speckit.analyze`: T120 makes insufficient cutter margin fail loudly (constitution Principle VI). T121–T124 apply the accepted C1 fix — a pipeline-level golden test and reviewed fixture generated from the unchanged `relief-demo-binary.stl`, an explicit read-only CI/update-script split, and a recorded production-output review. T121 follows T120 so the fixture reflects final placement semantics.

@@ -86,14 +86,16 @@ private let epsilon = 1e-6
     )
     let radius = (ToolpathFixture.cutter.cuttingDiameter ?? 0) / 2
     let bounds = toolpath.bounds
+    let modelWidth = job.modelBounds.max.x - job.modelBounds.min.x
+    let modelDepth = job.modelBounds.max.y - job.modelBounds.min.y
 
-    #expect(bounds.min.x >= -radius - epsilon)
-    #expect(bounds.min.y >= -radius - epsilon)
-    #expect(bounds.max.x <= job.modelBounds.max.x + radius + epsilon)
-    #expect(bounds.max.y <= job.modelBounds.max.y + radius + epsilon)
+    #expect(bounds.min.x >= -epsilon)
+    #expect(bounds.min.y >= -epsilon)
+    #expect(bounds.max.x <= modelWidth + 2 * radius + epsilon)
+    #expect(bounds.max.y <= modelDepth + 2 * radius + epsilon)
     #expect(bounds.max.z <= ToolpathFixture.profile.clearanceZ + epsilon)
-    #expect(bounds.max.x >= job.modelBounds.max.x - radius - epsilon)
-    #expect(bounds.max.y >= job.modelBounds.max.y - radius - epsilon)
+    #expect(bounds.max.x >= modelWidth + radius - epsilon)
+    #expect(bounds.max.y >= modelDepth + radius - epsilon)
 }
 
 @Test func rapidsStayAtClearanceHeightAndNeverEnterMaterial() async throws {
@@ -172,7 +174,7 @@ private let epsilon = 1e-6
     }
 }
 
-@Test func aModelAtTheMachineOriginStaysInsideTheStock() async throws {
+@Test func aModelPlacedWithOneCutterRadiusOfMarginStaysInsideTheStock() async throws {
     let stock = ToolpathFixture.stock
     let bounds = ToolpathFixture.modelBounds
     let job = try ToolpathFixture.job(
@@ -187,6 +189,14 @@ private let epsilon = 1e-6
         progress: ToolpathFixture.progressSink()
     )
 
+    let radius = (ToolpathFixture.cutter.cuttingDiameter ?? 0) / 2
+    let modelWidth = bounds.max.x - bounds.min.x
+    let modelDepth = bounds.max.y - bounds.min.y
+    #expect(abs(toolpath.bounds.min.x) < epsilon)
+    #expect(abs(toolpath.bounds.min.y) < epsilon)
+    #expect(abs(toolpath.bounds.max.x - (modelWidth + 2 * radius)) < epsilon)
+    #expect(abs(toolpath.bounds.max.y - (modelDepth + 2 * radius)) < epsilon)
+
     for move in toolpath.moves {
         for point in [move.from, move.to] {
             #expect(
@@ -199,8 +209,23 @@ private let epsilon = 1e-6
             )
         }
     }
-    #expect(toolpath.bounds.min.x >= -epsilon)
-    #expect(toolpath.bounds.min.y >= -epsilon)
     #expect(toolpath.bounds.max.x <= stock.width + epsilon)
     #expect(toolpath.bounds.max.y <= stock.depth + epsilon)
+}
+
+@Test func aModelWithoutCutterMarginIsRejectedByThePlanner() async throws {
+    let flushStock = StockBlank(width: 200, depth: 150, height: 30)
+    let job = try ToolpathFixture.job(stock: flushStock, cutter: ToolpathFixture.longCutter)
+    do {
+        _ = try await ToolpathPlanner().plan(
+            job,
+            profile: ToolpathFixture.profile,
+            progress: ToolpathFixture.progressSink()
+        )
+        Issue.record("a model with no room for the cutter radius must be rejected")
+    } catch PlanningError.insufficientCutterMargin(let required) {
+        #expect(required == 3)
+    } catch {
+        Issue.record("expected insufficientCutterMargin, got \(error)")
+    }
 }

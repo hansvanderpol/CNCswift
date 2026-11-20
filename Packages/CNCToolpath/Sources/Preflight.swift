@@ -76,6 +76,15 @@ public enum Preflight {
         }
 
         let extent = try CutterGeometrySupport.extent(of: cutter)
+        let radius = extent / 2
+        guard modelWidth + 2 * radius <= stock.width + epsilon,
+            modelDepth + 2 * radius <= stock.depth + epsilon,
+            modelWidth + 2 * radius <= profile.envelope.x + epsilon,
+            modelDepth + 2 * radius <= profile.envelope.y + epsilon
+        else {
+            throw PlanningError.insufficientCutterMargin(required: radius)
+        }
+
         guard job.maxDepthPerPass > 0, job.maxDepthPerPass <= cutter.cuttingLength + epsilon else {
             throw PlanningError.depthExceedsCuttingLength
         }

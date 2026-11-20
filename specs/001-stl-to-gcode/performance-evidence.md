@@ -1,6 +1,6 @@
 # Performance evidence — 001-stl-to-gcode
 
-**Feature**: `001-stl-to-gcode` | **Recorded**: 2026-11-20 | **Task**: T112 (SC-001, SC-012)
+**Feature**: `001-stl-to-gcode` | **Recorded**: 2026-11-20 | **Tasks**: T112, T119, T120 (SC-001, SC-012)
 
 This file records measured timings. The executable gates remain `Scripts/ci.sh` and the
 per-package test suites. Reproduce with:
@@ -22,12 +22,12 @@ is applied before planning, exactly as the app requires for an unconfirmed scale
 
 | Stage | Measured |
 |---|---|
-| Content-based decode (200,000 triangles) | 0.257 s |
-| Plan + render (3,598 moves, 51,553 output bytes) | 0.053 s |
-| Independent validation | 0.027 s |
-| **Total** | **0.337 s** |
+| Content-based decode (200,000 triangles) | 0.251 s |
+| Plan + render (3,598 moves, 51,553 output bytes) | 0.058 s |
+| Independent validation | 0.028 s |
+| **Total** | **0.338 s** |
 
-Budget: under five minutes. **PASS** — 0.337 s against a 300 s ceiling.
+Budget: under five minutes. **PASS** — 0.338 s against a 300 s ceiling.
 
 ## SC-012 — preview within five seconds, all five reference models
 
@@ -50,7 +50,7 @@ fixture took **0.559 s**, still well inside the budget. The current program has 
 the committed golden files contain 12 machine moves each, so the table above is a lower-bound
 latency check and the real-program figure is the more demanding data point.
 
-## Finding raised by the benchmark — resolved by T119
+## Finding raised by the benchmark — resolved by T119 and T120
 
 Generating from a reference STL whose model minimum sits at the machine origin produced 2,715
 validation findings in this benchmark: the cutter-radius footprint in `Footprint.make` expanded to
@@ -58,9 +58,13 @@ validation findings in this benchmark: the cutter-radius footprint in `Footprint
 `CNCValidation.ValidationRules.envelope`. The reviewed golden files start their moves at
 `X10.000 Y10.000`, so the defect was masked by hand-authored fixtures.
 
-T119 clips the swept region to the stock and the machine envelope (FR-038) and corrects
-`spindle-before-origin` to inspect the final origin return rather than the first raster rapid through
-X0 Y0. Re-running this benchmark on 200,000 triangles gives 3,598 moves, 51,553 output bytes and
-**`findings=0`** (decode 0.257 s, generation 0.053 s, validation 0.027 s, total 0.337 s). The timing
-evidence above stands — SC-001 measures speed — and the generated program is now committable, so the
-automated VS-1 path is unblocked.
+T119 corrects `spindle-before-origin` to inspect the final origin return rather than the first
+raster rapid through X0 Y0. T120 replaces its provisional clip with an explicit one-radius
+placement: the model sits inside the stock's front-left corner, `Footprint.make` expands the
+silhouette by exactly one radius without clamping, and preflight rejects any job whose expanded
+bounds would leave the stock or envelope (FR-011, FR-025, FR-038). Re-running this benchmark on
+200,000 triangles gives 3,598 moves, 51,553 output bytes and **`findings=0`** (decode 0.251 s,
+generation 0.058 s, validation 0.028 s, total 0.338 s). The timing evidence above stands — SC-001
+measures speed — and the generated program is now committable, so the automated VS-1 path is
+unblocked. The full pipeline output is locked down by the reviewed golden in
+`Fixtures/gcode/generation/` and `Packages/CNCPipeline/Tests/GenerationGoldenTests.swift` (T121).

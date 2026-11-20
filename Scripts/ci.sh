@@ -28,3 +28,12 @@ for package in Packages/*; do
     swift test --package-path "$package" \
         -Xswiftc -load-plugin-library -Xswiftc "$PLUGIN"
 done
+
+echo "==> Golden fixture guard"
+# Tests never write committed goldens. A dirty tracked golden or a tracked review candidate means
+# the fixture was changed without the production-output review required by the Development Workflow.
+git diff --exit-code -- ':(glob)Fixtures/gcode/*.nc' ':(glob)Fixtures/gcode/**/*.nc'
+if git ls-files Fixtures/gcode | grep -Eq '(^|/)\.received/'; then
+    echo "Golden review candidates under Fixtures/gcode/.received/ must not be tracked" >&2
+    exit 1
+fi

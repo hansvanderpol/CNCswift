@@ -29,6 +29,23 @@ enum ToolpathFixture {
         tipDiameter: nil
     )
 
+    /// The same 6 mm geometry as `cutter` but long enough to reach an 80 mm stock, so margin
+    /// rejections are isolated from the cutter-reach gate.
+    static let longCutter = Cutter(
+        id: CutterID("long-flat"),
+        name: "long flat",
+        type: .flat,
+        shankDiameter: 6,
+        cuttingLength: 80,
+        fluteCount: 2,
+        feedRate: 600,
+        spindleSpeed: 8000,
+        cuttingDiameter: 6,
+        ballDiameter: nil,
+        includedAngle: nil,
+        tipDiameter: nil
+    )
+
     static let material = Presets.all[1]
 
     static let modelBounds = AABB(
@@ -36,7 +53,8 @@ enum ToolpathFixture {
         max: Vec3(x: 200, y: 150, z: 30)
     )
 
-    static let stock = StockBlank(width: 200, depth: 150, height: 30)
+    /// The 200 x 150 mm model plus one 3 mm cutter radius on every side.
+    static let stock = StockBlank(width: 206, depth: 156, height: 30)
 
     static func effective(
         feed: Double = 600,

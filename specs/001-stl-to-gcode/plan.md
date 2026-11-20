@@ -21,6 +21,22 @@ This revision also resolves three CRITICAL findings from `/speckit.analyze` in t
 - **C2** — the atomic writer and its tests both live in `CNCGCode`, so `CNCValidation` keeps its structural independence from the emitter.
 - **C3** — the "no hardware control" and "no laser output" prohibitions (FR-030, FR-031) become module-boundary guards with their own tests, not prose.
 
+### Analysis follow-up: insufficient cutter margin (T120)
+
+The first VS-1 fix clipped the swept footprint to the stock and envelope. That kept emitted
+programs committable but silently accepted jobs with no room for the cutter, violating the
+rejection rules. The ratified behaviour is:
+
+- place the model one cutter radius inside the stock's front-left top corner;
+- expand the silhouette by exactly one radius to form the swept centre region;
+- reject the job with `PlanningError.insufficientCutterMargin(required:)` when the expanded region
+  would leave the stock or the 460 x 460 mm envelope, naming the required margin in millimetres.
+
+`Footprint.make` therefore never clamps; preflight is the single gate. This closes the
+post-implementation analysis finding C2 (insufficient cutter margin) under constitution Principle VI
+and FR-011/FR-025/FR-038. T121–T124 add the pipeline-level golden fixture that proves the resulting
+program is reproducible production output.
+
 ## Technical Context
 
 **Language/Version**: Swift 6.4.2 toolchain, Swift 6 language mode, `-strict-concurrency=complete` with warnings as errors.

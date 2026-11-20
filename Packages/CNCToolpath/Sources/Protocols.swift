@@ -179,6 +179,11 @@ public enum PlanningError: Error, Equatable, Sendable {
     /// The model is larger than the stock on at least one axis (FR-011).
     case modelOutsideStock
 
+    /// The stock leaves less than one cutter radius around the model (FR-011, FR-025, FR-038).
+    ///
+    /// - Parameter required: The cutter radius that must be available on every side, in millimetres.
+    case insufficientCutterMargin(required: Double)
+
     /// The cutter cannot reproduce the smallest feature (FR-041).
     case featureTooSmall(smallestConcaveRadius: Double, effectiveRadius: Double)
 
@@ -221,6 +226,9 @@ public enum PlanningError: Error, Equatable, Sendable {
         case .modelOutsideStock:
             return
                 "The model does not fit inside the stock. Reduce the model scale or choose a larger blank."
+        case .insufficientCutterMargin(let required):
+            return
+                "The stock must leave at least \(format(required)) mm of cutter margin on every side of the model. Increase the stock or choose a smaller cutter."
         case .featureTooSmall(let smallest, let effective):
             return
                 "Smallest concave feature \(format(smallest)) mm is below the cutter's effective radius \(format(effective)) mm. Choose a smaller cutter."

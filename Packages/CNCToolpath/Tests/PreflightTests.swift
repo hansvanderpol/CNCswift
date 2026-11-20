@@ -85,6 +85,19 @@ private func assertRejected(
     )
 }
 
+@Test func aModelWithoutOneCutterRadiusOfMarginIsRejected() throws {
+    let error = PlanningError.insufficientCutterMargin(required: 3)
+    let flushStock = StockBlank(width: 200, depth: 150, height: 30)
+    let longCutter = ToolpathFixture.longCutter
+    assertRejected(
+        error,
+        job: try ToolpathFixture.job(stock: flushStock, cutter: longCutter),
+        cutter: longCutter,
+        profile: ToolpathFixture.profile
+    )
+    #expect(error.userMessage.contains("3.000 mm"))
+}
+
 @Test func aMissingCutterAttributeIsRejected() throws {
     let incomplete = Cutter(
         id: ToolpathFixture.cutterID,
@@ -132,8 +145,8 @@ private func assertRejected(
 @Test func theExactMaximumEnvelopeIsAccepted() throws {
     let stock = StockBlank(width: 460, depth: 460, height: 80)
     let bounds = AABB(
-        min: Vec3(x: 0, y: 0, z: 0),
-        max: Vec3(x: 460, y: 460, z: 80)
+        min: Vec3(x: 3, y: 3, z: 0),
+        max: Vec3(x: 457, y: 457, z: 80)
     )
     let longCutter = Cutter(
         id: CutterID("long-flat"),

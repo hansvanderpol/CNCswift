@@ -21,17 +21,16 @@ struct Footprint: Sendable, Equatable {
         let lowerLeft = transform.apply(job.modelBounds.min)
         let upperRight = transform.apply(job.modelBounds.max)
 
-        // The cutter centre sweeps the model silhouette outward by exactly one radius (FR-038).
-        // A model placed at the front-left corner expands past X0/Y0 and a model flush with the far
-        // edge expands past the blank, so clip the margin to the stock and the machine envelope.
-        // Every emitted centre then stays committable; the origin and stock remain authoritative
-        // and no model coordinate is silently rescaled (research D6).
-        let limitX = min(job.stock.width, profile.envelope.x)
-        let limitY = min(job.stock.depth, profile.envelope.y)
-        let minX = max(0, min(lowerLeft.x, upperRight.x) - radius)
-        let minY = max(0, min(lowerLeft.y, upperRight.y) - radius)
-        let maxX = min(limitX, max(lowerLeft.x, upperRight.x) + radius)
-        let maxY = min(limitY, max(lowerLeft.y, upperRight.y) + radius)
+        // The model is placed one cutter radius inside the stock's front-left corner, then the
+        // cutter centre sweeps the silhouette outward by exactly one radius (FR-009, FR-038). The
+        // lower edge therefore lands on X0/Y0 and the upper edge sits one radius past the model;
+        // no clipping or rescaling is applied. Preflight rejects a stock too small to hold the full
+        // margin, so every emitted centre is committable by construction (FR-011, FR-025).
+        let placement = radius
+        let minX = min(lowerLeft.x, upperRight.x) + placement - radius
+        let minY = min(lowerLeft.y, upperRight.y) + placement - radius
+        let maxX = max(lowerLeft.x, upperRight.x) + placement + radius
+        let maxY = max(lowerLeft.y, upperRight.y) + placement + radius
 
         return Footprint(
             minX: minX,
