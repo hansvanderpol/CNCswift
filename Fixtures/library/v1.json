@@ -1,0 +1,47 @@
+{
+  "payload" : {
+    "cutters" : [
+      {
+        "cuttingDiameter" : 6,
+        "cuttingLength" : 20,
+        "feedRate" : 750,
+        "fluteCount" : 2,
+        "id" : {
+          "rawValue" : "flat-6mm"
+        },
+        "name" : "6mm flat",
+        "shankDiameter" : 6,
+        "spindleSpeed" : 8000,
+        "type" : "flat"
+      },
+      {
+        "ballDiameter" : 4,
+        "cuttingLength" : 15,
+        "feedRate" : 700,
+        "fluteCount" : 2,
+        "id" : {
+          "rawValue" : "ball-4mm"
+        },
+        "name" : "4mm ball nose",
+        "shankDiameter" : 4,
+        "spindleSpeed" : 7500,
+        "type" : "ballNose"
+      },
+      {
+        "cuttingLength" : 8,
+        "feedRate" : 600,
+        "fluteCount" : 2,
+        "id" : {
+          "rawValue" : "vbit-30deg"
+        },
+        "includedAngle" : 30,
+        "name" : "30 degree V-bit",
+        "shankDiameter" : 6.4,
+        "spindleSpeed" : 8000,
+        "tipDiameter" : 0.5,
+        "type" : "vBit"
+      }
+    ]
+  },
+  "schemaVersion" : 1
+}

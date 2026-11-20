@@ -1,0 +1,81 @@
+import CNCCutters
+import SwiftUI
+
+/// The per-type cutter form (FR-045, FR-046, FR-047).
+///
+/// Only the fields requested by `CutterEditorModel.requiredFields()` are shown, so a flat cutter
+/// cannot borrow a ball diameter or a V-bit angle as a substitute for its own dimension.
+@MainActor
+public struct CutterEditor: View {
+    private let model: CutterEditorModel
+
+    public init(model: CutterEditorModel) {
+        self.model = model
+    }
+
+    public var body: some View {
+        Form {
+            Section("Cutter type") {
+                Picker(
+                    "Type",
+                    selection: Binding(
+                        get: { model.type },
+                        set: { model.type = $0 }
+                    )
+                ) {
+                    ForEach(CutterType.allCases, id: \.self) { type in
+                        Text(type.rawValue).tag(type)
+                    }
+                }
+                .accessibilityLabel("Cutter type")
+                .accessibilityIdentifier("cutter-type-picker")
+            }
+
+            Section("Dimensions and starting values") {
+                ForEach(model.requiredFields(), id: \.self) { field in
+                    fieldRow(field)
+                }
+            }
+
+            if let firstError = firstError() {
+                Text(firstError)
+                    .font(.caption)
+                    .foregroundStyle(.red)
+                    .accessibilityIdentifier("cutter-editor-first-error")
+            }
+        }
+        .accessibilityIdentifier("cutter-editor")
+    }
+
+    @ViewBuilder
+    private func fieldRow(_ field: CutterField) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            TextField(
+                field.label,
+                text: Binding(
+                    get: { model.fields[field] ?? "" },
+                    set: { model.fields[field] = $0 }
+                )
+            )
+            .textFieldStyle(.roundedBorder)
+            .accessibilityLabel(field.label)
+            .accessibilityIdentifier("cutter-field-\(field.rawValue)")
+
+            if let error = model.fieldError(field) {
+                Text(error)
+                    .font(.caption)
+                    .foregroundStyle(.red)
+                    .accessibilityIdentifier("cutter-field-error-\(field.rawValue)")
+            }
+        }
+    }
+
+    private func firstError() -> String? {
+        for field in model.requiredFields() {
+            if let error = model.fieldError(field) {
+                return "\(field.label): \(error)"
+            }
+        }
+        return nil
+    }
+}

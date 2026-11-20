@@ -177,14 +177,14 @@ Do not silently rewrite `spec.md` while implementing. The clarified spec, `plan.
 
 ### Implementation for User Story 2
 
-- [ ] T081 [US2] Implement the forward-only cutter migration chain using `CNCStorage` (FR-052) — `Packages/CNCCuttersStore/Sources/Migrations.swift`
-- [ ] T082 [US2] Implement the modal module entry point and cutter list as a module usable without the main screen running (FR-056, FR-057) — `Packages/CutterLibraryModalUI/Sources/LibraryModal.swift`
-- [ ] T083 [US2] Implement per-type editor forms requesting exactly the dimensions of the chosen type, with no bare-diameter substitute (FR-045, FR-046, FR-047) — `Packages/CutterLibraryModalUI/Sources/CutterEditor.swift`
-- [ ] T084 [US2] Implement field-level entry-validation messaging naming the rule and limit; never defer to generation time (FR-048) — `Packages/CutterLibraryModalUI/Sources/CutterEditorModel.swift`
-- [ ] T085 [US2] Implement modal edit and delete operations that publish through the store and hold no main-screen reference (FR-058, FR-059) — `Packages/CutterLibraryModalUI/Sources/LibraryModalModel.swift`
-- [ ] T086 [US2] Subscribe the main-screen view model to the change stream, re-resolve the selected cutter identifier, and block generation on a stale or deleted selection (FR-060, FR-058) — `Packages/MainScreenUI/Sources/MainScreenModel.swift`
-- [ ] T087 [US2] Add the Cutter Library command, modal presentation, and composition-root wiring so one store is injected into both modules (FR-056, FR-057, FR-072) — `App/Sources/CNCswiftApp/Commands.swift`, `App/Sources/CNCswiftApp/Composition.swift`
-- [ ] T088 [US2] Commit reviewed cutter schema v1 and v2 fixtures used by the migration tests (FR-052, SC-008) — `Fixtures/library/`
+- [X] T081 [US2] Implement the forward-only cutter migration chain using `CNCStorage` (FR-052) — `Packages/CNCCuttersStore/Sources/Migrations.swift`
+- [X] T082 [US2] Implement the modal module entry point and cutter list as a module usable without the main screen running (FR-056, FR-057) — `Packages/CutterLibraryModalUI/Sources/LibraryModal.swift`
+- [X] T083 [US2] Implement per-type editor forms requesting exactly the dimensions of the chosen type, with no bare-diameter substitute (FR-045, FR-046, FR-047) — `Packages/CutterLibraryModalUI/Sources/CutterEditor.swift`
+- [X] T084 [US2] Implement field-level entry-validation messaging naming the rule and limit; never defer to generation time (FR-048) — `Packages/CutterLibraryModalUI/Sources/CutterEditorModel.swift`
+- [X] T085 [US2] Implement modal edit and delete operations that publish through the store and hold no main-screen reference (FR-058, FR-059) — `Packages/CutterLibraryModalUI/Sources/LibraryModalModel.swift`
+- [X] T086 [US2] Subscribe the main-screen view model to the change stream, re-resolve the selected cutter identifier, and block generation on a stale or deleted selection (FR-060, FR-058) — `Packages/MainScreenUI/Sources/MainScreenModel.swift`
+- [X] T087 [US2] Add the Cutter Library command, modal presentation, and composition-root wiring so one store is injected into both modules (FR-056, FR-057, FR-072) — `App/Sources/CNCswiftApp/Commands.swift`, `App/Sources/CNCswiftApp/Composition.swift`
+- [X] T088 [US2] Commit reviewed cutter schema v1 and v2 fixtures used by the migration tests (FR-052, SC-008) — `Fixtures/library/`
 
 **Checkpoint**: US1 already consumes cutters from the persisted library; US2 now adds migration and the modal. Run quickstart VS-6 and VS-7.
 

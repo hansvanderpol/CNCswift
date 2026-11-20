@@ -1,4 +1,5 @@
 import CNCCutters
+import CNCCuttersStore
 import CNCMachineProfile
 import CNCMaterials
 import CNCToolpath
@@ -321,6 +322,26 @@ public final class MainScreenModel {
     public func resolvedCutter(in library: [Cutter]) -> Cutter? {
         guard let selectedCutterID else { return nil }
         return library.first { $0.id == selectedCutterID }
+    }
+
+    /// Applies one persisted-library change to the current selection (FR-060, SC-007).
+    ///
+    /// `deleted` clears the selection only when it names the stored cutter currently chosen.
+    /// `saved` and `reloaded` re-resolve the stable identifier, so an edit reaches the next job
+    /// without relaunch while a missing identifier blocks generation until one is chosen again.
+    /// The caller supplies the freshly loaded library; no cutter payload travels in the event.
+    public func applyLibraryChange(_ change: LibraryChange, library: [Cutter]) {
+        guard let currentID = self.selectedCutterID else { return }
+        switch change {
+        case .deleted(let deletedID):
+            if deletedID == currentID {
+                clearCutterSelection()
+            }
+        case .saved, .reloaded:
+            if !library.contains(where: { $0.id == currentID }) {
+                clearCutterSelection()
+            }
+        }
     }
 
     /// Runs the injected write-free generation action (FR-069).

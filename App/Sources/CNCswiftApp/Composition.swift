@@ -48,16 +48,21 @@ final class AppComposition {
     private(set) var cutters: [Cutter] = []
     private(set) var materials: [Material] = Presets.all
 
+    /// Whether the cutter-library modal is presented. Kept here so the command and the sheet share
+    /// one observable source of truth without a cross-module view reference (FR-056, FR-059).
+    var showingCutterLibrary = false
+
     private let fileSystem: any FileSystem
-    private let cutterStore: CutterLibraryStore
+    let cutterStore: CutterLibraryStore
     private let materialStore: MaterialLibraryStore
-    private let cutterURL: URL
+    let cutterURL: URL
     private let materialURL: URL
     private let outputDirectory: URL
     private let cancellation = CancellationFlag()
 
     private var loadedModel: MeshDocument?
     private var pipeline: ToolpathService
+    private var cutterChangeTask: Task<Void, Never>?
 
     init(fileSystem: any FileSystem = DiskFileSystem()) {
         self.fileSystem = fileSystem
@@ -94,8 +99,43 @@ final class AppComposition {
         }
     }
 
+    /// Starts consuming library changes before the initial load so no event published by the modal
+    /// can be missed (FR-058, FR-060). The stream is buffered per subscriber by the store.
+    func startCutterChangeSubscription() {
+        guard cutterChangeTask == nil else { return }
+        cutterChangeTask = Task { [weak self] in
+            guard let self else { return }
+            let changes = await cutterStore.changes
+            for await change in changes {
+                await handleCutterChange(change)
+            }
+        }
+    }
+
+    /// Re-reads the persisted library after one event and re-resolves the selected cutter.
+    ///
+    /// Events carry only *what* changed, never a cutter payload, so the document stays the only
+    /// source of truth (FR-060, research D14).
+    private func handleCutterChange(_ change: LibraryChange) async {
+        do {
+            let fresh: [Cutter]
+            switch try await cutterStore.load(from: cutterURL) {
+            case .loaded(let values), .migrated(_, let values):
+                fresh = values
+            case .absent, .refused, .corrupt:
+                fresh = []
+            }
+            cutters = fresh
+            model.applyLibraryChange(change, library: fresh)
+            refreshDerivedValues()
+        } catch {
+            model.reportFailure(error.localizedDescription)
+        }
+    }
+
     /// Loads the persisted libraries and primes selection, prefills, and suggestions.
     func loadLibraries() async {
+        startCutterChangeSubscription()
         do {
             let loadedCutters: [Cutter]
             switch try await cutterStore.load(from: cutterURL) {
