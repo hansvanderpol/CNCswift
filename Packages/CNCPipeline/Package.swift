@@ -20,6 +20,8 @@ let package = Package(
         .package(path: "../CNCSTL"),
         .package(path: "../CNCToolpath"),
         .package(path: "../CNCValidation"),
+        .package(path: "../CutterLibraryModalUI"),
+        .package(path: "../MainScreenUI"),
     ],
     targets: [
         .target(
@@ -55,6 +57,8 @@ let package = Package(
                 .product(name: "CNCSTL", package: "CNCSTL"),
                 .product(name: "CNCToolpath", package: "CNCToolpath"),
                 .product(name: "CNCValidation", package: "CNCValidation"),
+                .product(name: "CutterLibraryModalUI", package: "CutterLibraryModalUI"),
+                .product(name: "MainScreenUI", package: "MainScreenUI"),
             ],
             path: "Tests",
             swiftSettings: [.treatAllWarnings(as: .error)]

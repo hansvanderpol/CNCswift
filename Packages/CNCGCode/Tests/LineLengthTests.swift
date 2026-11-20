@@ -1,5 +1,5 @@
-import CNCGCode
 import CNCCutters
+import CNCGCode
 import CNCGeometry
 import CNCMachineProfile
 import CNCMaterials
@@ -22,7 +22,9 @@ import Testing
     for (index, line) in lines.enumerated() {
         #expect(line.count <= 80, "line \(index + 1) exceeds 80 characters: \(line.count)")
         #expect(line.allSatisfy { $0.isASCII }, "line \(index + 1) contains non-ASCII: \(line)")
-        #expect(line.unicodeScalars.allSatisfy { $0.value <= 0x7F }, "line \(index + 1) is not 7-bit ASCII")
+        #expect(
+            line.unicodeScalars.allSatisfy { $0.value <= 0x7F },
+            "line \(index + 1) is not 7-bit ASCII")
     }
 
     #expect(rendered.text.utf8.allSatisfy { $0 <= 0x7F })
@@ -94,7 +96,7 @@ import Testing
     // A body line that cannot be represented within 80 characters must be refused rather than emitted.
     let farMove = Move(
         from: Vec3(x: 0, y: 0, z: 10),
-        to: Vec3(x: 12345678901234567890.0, y: 0, z: -1),
+        to: Vec3(x: 1e100, y: 0, z: -1),
         mode: .cut
     )
     let toolpath = Toolpath(
@@ -102,7 +104,7 @@ import Testing
         feedRate: 600,
         bounds: AABB(
             min: Vec3(x: 0, y: 0, z: -1),
-            max: Vec3(x: 12345678901234567890.0, y: 0, z: 10)
+            max: Vec3(x: 1e100, y: 0, z: 10)
         )
     )
 

@@ -77,10 +77,11 @@ enum EmitterFixture {
         )
     }
 
-    /// One plunge, two raster cuts, a retract, a step-over rapid, a second plunge, and one cut.
+    /// One plunge, two raster cuts, a retract, a step-over rapid, a second plunge, one cut, and a
+    /// final retract.
     ///
-    /// Four rapid moves and four cutting moves, so the rapid and feed assertions have something to
-    /// fail on. No rapid enters material: the retract is at clearance and the step-over stays at
+    /// Four rapid moves and five cutting moves, so the rapid and feed assertions have something to
+    /// fail on. No rapid enters material: every retract is at clearance and the step-over stays at
     /// clearance before descending (FR-039).
     static let toolpath = Toolpath(
         moves: [
@@ -123,6 +124,11 @@ enum EmitterFixture {
                 from: Vec3(x: 14.8, y: 12.4, z: -1.42),
                 to: Vec3(x: 17.2, y: 12.4, z: -1.42),
                 mode: .cut
+            ),
+            Move(
+                from: Vec3(x: 17.2, y: 12.4, z: -1.42),
+                to: Vec3(x: 17.2, y: 12.4, z: 10),
+                mode: .rapid
             ),
         ],
         feedRate: 600,

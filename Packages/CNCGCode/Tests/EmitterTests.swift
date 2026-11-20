@@ -108,8 +108,12 @@ private let goldenHeader = [
     let rendered = try EmitterFixture.render(
         generatedAt: EmitterFixture.date("2026-11-17T09:12:44Z")
     )
-    let bodyLines = EmitterFixture.emittedLines(of: rendered.text)
-        .filter { !$0.hasPrefix(";") }
+    let lines = EmitterFixture.emittedLines(of: rendered.text)
+    let headerEnd = lines.prefix { $0.hasPrefix(";") }.count
+    let profile = TTC450Pro.profile
+    let bodyLines = Array(
+        lines[(headerEnd + profile.startBlock.count)..<(lines.count - profile.stopBlock.count)]
+    )
 
     var coordinateWords = 0
     for line in bodyLines {

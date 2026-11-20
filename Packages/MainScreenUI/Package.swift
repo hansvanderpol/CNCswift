@@ -8,15 +8,33 @@ let package = Package(
     products: [
         .library(name: "MainScreenUI", targets: ["MainScreenUI"])
     ],
+    dependencies: [
+        .package(path: "../CNCCutters"),
+        .package(path: "../CNCMachineProfile"),
+        .package(path: "../CNCMaterials"),
+        .package(path: "../CNCToolpath"),
+    ],
     targets: [
         .target(
             name: "MainScreenUI",
+            dependencies: [
+                .product(name: "CNCCutters", package: "CNCCutters"),
+                .product(name: "CNCMachineProfile", package: "CNCMachineProfile"),
+                .product(name: "CNCMaterials", package: "CNCMaterials"),
+                .product(name: "CNCToolpath", package: "CNCToolpath"),
+            ],
             path: "Sources",
             swiftSettings: [.treatAllWarnings(as: .error)]
         ),
         .testTarget(
             name: "MainScreenUITests",
-            dependencies: ["MainScreenUI"],
+            dependencies: [
+                "MainScreenUI",
+                .product(name: "CNCCutters", package: "CNCCutters"),
+                .product(name: "CNCMachineProfile", package: "CNCMachineProfile"),
+                .product(name: "CNCMaterials", package: "CNCMaterials"),
+                .product(name: "CNCToolpath", package: "CNCToolpath"),
+            ],
             path: "Tests",
             swiftSettings: [.treatAllWarnings(as: .error)]
         ),

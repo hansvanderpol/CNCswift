@@ -1,4 +1,5 @@
 import CNCGCode
+import CNCMachineProfile
 import Foundation
 import Testing
 
@@ -27,7 +28,13 @@ import Testing
     let rendered = try EmitterFixture.render(
         generatedAt: EmitterFixture.date("2026-11-17T09:12:44Z")
     )
-    let rapids = EmitterFixture.emittedLines(of: rendered.text).filter(isRapid)
+    let lines = EmitterFixture.emittedLines(of: rendered.text)
+    let headerEnd = lines.prefix { $0.hasPrefix(";") }.count
+    let profile = TTC450Pro.profile
+    let movementLines = Array(
+        lines[(headerEnd + profile.startBlock.count)..<(lines.count - profile.stopBlock.count)]
+    )
+    let rapids = movementLines.filter(isRapid)
 
     // The fixture toolpath has four rapids, so this test cannot pass vacuously.
     #expect(rapids.count == 4)

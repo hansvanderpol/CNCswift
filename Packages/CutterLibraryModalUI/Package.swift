@@ -8,15 +8,27 @@ let package = Package(
     products: [
         .library(name: "CutterLibraryModalUI", targets: ["CutterLibraryModalUI"])
     ],
+    dependencies: [
+        .package(path: "../CNCCutters"),
+        .package(path: "../CNCCuttersStore"),
+    ],
     targets: [
         .target(
             name: "CutterLibraryModalUI",
+            dependencies: [
+                .product(name: "CNCCutters", package: "CNCCutters"),
+                .product(name: "CNCCuttersStore", package: "CNCCuttersStore"),
+            ],
             path: "Sources",
             swiftSettings: [.treatAllWarnings(as: .error)]
         ),
         .testTarget(
             name: "CutterLibraryModalUITests",
-            dependencies: ["CutterLibraryModalUI"],
+            dependencies: [
+                "CutterLibraryModalUI",
+                .product(name: "CNCCutters", package: "CNCCutters"),
+                .product(name: "CNCCuttersStore", package: "CNCCuttersStore"),
+            ],
             path: "Tests",
             swiftSettings: [.treatAllWarnings(as: .error)]
         ),
