@@ -53,6 +53,10 @@ final class AppComposition {
     /// one observable source of truth without a cross-module view reference (FR-056, FR-059).
     var showingCutterLibrary = false
 
+    /// Whether the keyboard-shortcut reference is presented. Kept here for the same reason as the
+    /// library flag: the menu command and the sheet need one observable source of truth.
+    var showingKeyboardHelp = false
+
     private let fileSystem: any FileSystem
     let cutterStore: CutterLibraryStore
     private let materialStore: MaterialLibraryStore

@@ -225,10 +225,10 @@ Do not silently rewrite `spec.md` while implementing. The clarified spec, `plan.
 
 **Purpose**: Accessibility, platform conventions, privacy guarantees, executable boundaries, performance evidence, preset sign-off, and final gates.
 
-- [ ] T104 [P] Accessibility pass adding labels, roles, values, and reading order on every custom control (FR-070, SC-009) — `Packages/MainScreenUI/Sources/`, `Packages/CutterLibraryModalUI/Sources/`
-- [ ] T105 [P] Honour VoiceOver, Increase Contrast, Reduce Motion, and full keyboard access; verify both primary workflows without a pointing device (FR-071, SC-009) — `App/Sources/CNCswiftApp/`
-- [ ] T106 [P] Implement menu-bar conventions, standard shortcuts, window restoration, and settings (FR-072) — `App/Sources/CNCswiftApp/Menus.swift`
-- [ ] T107 [P] Offline audit asserting no networking import or API and recording the network-monitor result for a full session (FR-074, SC-010) — `App/Sources/CNCswiftApp/`, `Scripts/ci.sh`
+- [X] T104 [P] Accessibility pass adding labels, roles, values, and reading order on every custom control (FR-070, SC-009) — `Packages/MainScreenUI/Sources/`, `Packages/CutterLibraryModalUI/Sources/`
+- [X] T105 [P] Honour VoiceOver, Increase Contrast, Reduce Motion, and full keyboard access; verify both primary workflows without a pointing device (FR-071, SC-009) — `App/Sources/CNCswiftApp/`
+- [X] T106 [P] Implement menu-bar conventions, standard shortcuts, window restoration, and settings (FR-072) — `App/Sources/CNCswiftApp/Menus.swift`
+- [X] T107 [P] Offline audit asserting no networking import or API and recording the network-monitor result for a full session (FR-074, SC-010) — `App/Sources/CNCswiftApp/`, `Scripts/ci.sh`
 - [X] T108 [P] Hardware-boundary guard test failing if any serial, USB, or machine-control surface exists outside an explicitly empty allow-list (FR-030, C3) — `Packages/CNCPipeline/Tests/HardwareBoundaryTests.swift`
 - [X] T109 [P] Dialect-purity test failing if GRBL tokens or limits appear outside the profile and emitter (FR-015, FR-016, FR-017) — `Packages/CNCGCode/Tests/DialectPurityTests.swift`
 - [X] T110 [P] File-write-boundary test failing if any package other than `CNCGCode` and `CNCPipeline` can reach a file-writing API (FR-027, C2, C3) — `Packages/CNCGCode/Tests/WriteBoundaryTests.swift`

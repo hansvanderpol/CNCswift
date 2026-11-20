@@ -36,24 +36,32 @@ public struct LibraryModal: View {
                 if let message = model.errorMessage {
                     Text(message)
                         .font(.callout)
-                        .foregroundStyle(.red)
+                        .modifier(ContrastAwareError())
+                        .accessibilityLabel(AccessibilityText.libraryError(message))
                         .accessibilityIdentifier("library-modal-error")
+                        .accessibilitySortPriority(AccessibilityPriority.error)
                 }
 
                 List {
-                    Section("Stored cutters") {
+                    Section {
                         if model.cutters.isEmpty {
                             Text("No cutters yet. Add one below.")
                                 .foregroundStyle(.secondary)
+                                .accessibilityLabel("No cutters yet. Add one below.")
                                 .accessibilityIdentifier("library-modal-empty")
                         } else {
                             ForEach(model.cutters, id: \.id) { cutter in
                                 cutterRow(cutter)
                             }
                         }
+                    } header: {
+                        Text("Stored cutters")
+                            .accessibilityAddTraits(.isHeader)
+                            .accessibilitySortPriority(AccessibilityPriority.header)
                     }
                 }
                 .accessibilityIdentifier("library-modal-list")
+                .accessibilityLabel("Stored cutters")
 
                 CutterEditor(model: editor)
 
@@ -63,7 +71,10 @@ public struct LibraryModal: View {
                     Label("Add cutter", systemImage: "plus")
                 }
                 .disabled(editorHasErrors())
+                .accessibilityLabel("Add cutter")
+                .accessibilityHint("Saves the cutter entered above to this Mac")
                 .accessibilityIdentifier("library-modal-add")
+                .accessibilitySortPriority(AccessibilityPriority.action)
             }
             .padding(12)
             .navigationTitle("Cutter Library")
@@ -73,11 +84,15 @@ public struct LibraryModal: View {
         }
         .frame(minWidth: 480, minHeight: 560)
         .accessibilityIdentifier("cutter-library-modal")
+        .accessibilityLabel("Cutter Library")
+        .accessibilityElement(children: .contain)
     }
 
     @ViewBuilder
     private func cutterRow(_ cutter: Cutter) -> some View {
         HStack {
+            // The row is one element so VoiceOver reads the identity, dimensions, and Delete action
+            // in that order instead of as unrelated cells.
             VStack(alignment: .leading, spacing: 2) {
                 Text(cutter.name).font(.headline)
                 Text(
@@ -95,8 +110,21 @@ public struct LibraryModal: View {
             } label: {
                 Label("Delete", systemImage: "trash")
             }
-            .accessibilityLabel("Delete \(cutter.name)")
+            .accessibilityLabel(AccessibilityText.deleteCutterLabel(cutter.name))
+            .accessibilityHint("Permanently removes this cutter from the library")
+            .accessibilitySortPriority(AccessibilityPriority.action)
         }
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(
+            AccessibilityText.cutterRowLabel(name: cutter.name, type: cutter.type.rawValue)
+        )
+        .accessibilityValue(
+            AccessibilityText.cutterRowValue(
+                shank: formatted(cutter.shankDiameter),
+                cut: formatted(cutter.maxCuttingExtent)
+            )
+        )
+        .accessibilitySortPriority(AccessibilityPriority.primary)
     }
 
     private func addCutter() {

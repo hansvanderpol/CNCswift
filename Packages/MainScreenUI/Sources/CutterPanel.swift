@@ -25,7 +25,11 @@ public struct CutterPanel: View {
                 if cutters.isEmpty {
                     Text("No stored cutters yet. Add one in the cutter-library modal.")
                         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+                        .accessibilityLabel(
+                            "No stored cutters. Add one in the cutter-library modal."
+                        )
                         .accessibilityIdentifier("cutter-panel-empty")
+                        .accessibilitySortPriority(AccessibilityPriority.primary)
                 } else {
                     ScrollView {
                         LazyVStack(spacing: 8) {
@@ -40,8 +44,11 @@ public struct CutterPanel: View {
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         } label: {
             Label("Cutter selection", systemImage: "wrench.and.screwdriver")
+                .accessibilityAddTraits(.isHeader)
+                .accessibilitySortPriority(AccessibilityPriority.header)
         }
         .accessibilityIdentifier("cutter-panel")
+        .accessibilityLabel("Cutter selection")
     }
 
     @ViewBuilder
@@ -58,7 +65,7 @@ public struct CutterPanel: View {
                     if isSelected {
                         Image(systemName: "checkmark.circle.fill")
                             .foregroundStyle(Color.accentColor)
-                            .accessibilityLabel("Selected")
+                            .accessibilityHidden(true)  // the button's value already says "Selected"
                     }
                 }
                 Text(
@@ -71,16 +78,23 @@ public struct CutterPanel: View {
             }
             .padding(10)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .background(isSelected ? Color.accentColor.opacity(0.12) : Color.clear)
-            .clipShape(RoundedRectangle(cornerRadius: 8))
         }
         .buttonStyle(.plain)
-        .accessibilityLabel("Cutter \(cutter.name), \(cutter.type.rawValue)")
-        .accessibilityValue(
-            isSelected
-                ? "Selected, \(formatted(cutter.maxCuttingExtent)) millimetres cutting diameter"
-                : "Not selected, \(formatted(cutter.maxCuttingExtent)) millimetres cutting diameter"
+        .modifier(ContrastAwareSelection(isSelected: isSelected, cornerRadius: 8))
+        .accessibilityLabel(
+            AccessibilityText.cutterLabel(name: cutter.name, type: cutter.type.rawValue)
         )
+        .accessibilityValue(
+            AccessibilityText.cutterValue(
+                isSelected: isSelected,
+                diameter: formatted(cutter.maxCuttingExtent),
+                feed: formatted(cutter.feedRate),
+                spindle: formatted(cutter.spindleSpeed)
+            )
+        )
+        .accessibilityHint("Selects this cutter for the current job")
+        .accessibilityAddTraits(.isButton)
+        .accessibilitySortPriority(AccessibilityPriority.primary)
     }
 
     private func formatted(_ value: Double) -> String {

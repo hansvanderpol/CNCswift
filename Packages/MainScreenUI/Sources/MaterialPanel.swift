@@ -51,7 +51,7 @@ public struct MaterialPanel: View {
 
     private var materialSection: some View {
         VStack(alignment: .leading, spacing: 6) {
-            Text("Material").font(.headline)
+            heading("Material")
             Picker(
                 "Material",
                 selection: Binding(
@@ -66,6 +66,8 @@ public struct MaterialPanel: View {
             }
             .pickerStyle(.menu)
             .accessibilityLabel("Carving material")
+            .accessibilityHint("Choose the material that will be carved")
+            .accessibilitySortPriority(AccessibilityPriority.secondary)
 
             if let material = selectedMaterial {
                 Text(bandDescription(for: material))
@@ -79,14 +81,16 @@ public struct MaterialPanel: View {
                 Text(conflict.message)
                     .font(.caption)
                     .foregroundStyle(.red)
+                    .accessibilityLabel("Material conflict: \(conflict.message)")
                     .accessibilityIdentifier("material-conflict")
+                    .accessibilitySortPriority(AccessibilityPriority.findings)
             }
         }
     }
 
     private var stockSection: some View {
         VStack(alignment: .leading, spacing: 6) {
-            Text("Stock blank (mm)").font(.headline)
+            heading("Stock blank (mm)")
             HStack(spacing: 10) {
                 dimensionField(
                     "Width",
@@ -124,26 +128,41 @@ public struct MaterialPanel: View {
 
     private var effectiveValuesSection: some View {
         VStack(alignment: .leading, spacing: 6) {
-            Text("Effective cutting values").font(.headline)
+            heading("Effective cutting values")
             if let values = model.effectiveValues ?? prefilledValues {
                 HStack(spacing: 16) {
                     Text("Feed: \(formatted(values.feed)) mm/min")
                     Text("Spindle: \(formatted(values.spindle)) RPM")
                 }
+                .accessibilityElement(children: .ignore)
+                .accessibilityLabel("Effective cutting values")
+                .accessibilityValue(
+                    "Feed \(formatted(values.feed)) millimetres per minute, "
+                        + "spindle \(formatted(values.spindle)) RPM, source \(values.source.rawValue), "
+                        + "\(values.confirmed ? "confirmed" : "unconfirmed")"
+                )
+                .accessibilitySortPriority(AccessibilityPriority.secondary)
                 Text("Source: \(values.source.rawValue)")
                     .font(.caption2)
                     .foregroundStyle(.secondary)
+                    .accessibilityHidden(true)  // already part of the combined value above
                 if values.confirmed {
                     Label("Confirmed", systemImage: "checkmark.circle.fill")
                         .font(.caption)
                         .foregroundStyle(.green)
+                        .accessibilityLabel("Feed and spindle confirmed")
+                        .accessibilitySortPriority(AccessibilityPriority.status)
                 } else {
                     Button("Confirm feed and spindle") {
                         guard let prefilledValues else { return }
                         model.confirmEffectiveValues(prefilledValues)
                     }
                     .disabled(prefilledValues == nil)
+                    .accessibilityHint(
+                        "Accepts the values resolved from the selected cutter and material"
+                    )
                     .accessibilityIdentifier("confirm-effective-values")
+                    .accessibilitySortPriority(AccessibilityPriority.primary)
                 }
             } else {
                 Text("Select a stored cutter and a material to resolve feed and spindle values.")
@@ -155,7 +174,7 @@ public struct MaterialPanel: View {
 
     private var jobSettingsSection: some View {
         VStack(alignment: .leading, spacing: 6) {
-            Text("Job settings").font(.headline)
+            heading("Job settings")
             if let suggestion = model.pendingSuggestion ?? computedSuggestion {
                 HStack(spacing: 12) {
                     Text("Stepover \(formatted(suggestion.stepover)) mm")
@@ -163,15 +182,28 @@ public struct MaterialPanel: View {
                     Text("Allowance \(formatted(suggestion.finishingAllowance)) mm")
                 }
                 .font(.caption)
+                .accessibilityElement(children: .ignore)
+                .accessibilityLabel("Suggested job values")
+                .accessibilityValue(
+                    "Stepover \(formatted(suggestion.stepover)) millimetres, "
+                        + "depth \(formatted(suggestion.maxDepthPerPass)) millimetres, "
+                        + "allowance \(formatted(suggestion.finishingAllowance)) millimetres"
+                )
+                .accessibilitySortPriority(AccessibilityPriority.secondary)
                 if model.appliedSuggestion?.confirmed == true {
                     Label("Suggested values confirmed", systemImage: "checkmark.circle.fill")
                         .font(.caption)
                         .foregroundStyle(.green)
+                        .accessibilitySortPriority(AccessibilityPriority.status)
                 } else {
                     Button("Confirm suggested job values") {
                         model.applySuggestion(suggestion.confirming())
                     }
+                    .accessibilityHint(
+                        "Applies the suggested stepover, depth, and finishing allowance"
+                    )
                     .accessibilityIdentifier("confirm-job-settings")
+                    .accessibilitySortPriority(AccessibilityPriority.primary)
                 }
             } else {
                 Text("Select a cutter and enter stock dimensions to see suggested job values.")
@@ -183,7 +215,7 @@ public struct MaterialPanel: View {
 
     private var rapidRateSection: some View {
         VStack(alignment: .leading, spacing: 6) {
-            Text("Controller setup").font(.headline)
+            heading("Controller setup")
             Toggle(
                 "Rapid settings applied (\(rapidSetupDescription))",
                 isOn: Binding(
@@ -192,19 +224,32 @@ public struct MaterialPanel: View {
                 )
             )
             .accessibilityLabel("Controller rapid-rate settings applied")
+            .accessibilityValue(model.rapidRateConfirmed ? "Applied" : "Not applied")
+            .accessibilityHint("Confirm these settings have been applied on the controller")
+            .accessibilitySortPriority(AccessibilityPriority.primary)
             Text("The app never reads or changes controller settings.")
                 .font(.caption2)
                 .foregroundStyle(.secondary)
         }
     }
 
+    private func heading(_ title: String) -> some View {
+        Text(title)
+            .font(.headline)
+            .accessibilityAddTraits(.isHeader)
+            .accessibilitySortPriority(AccessibilityPriority.secondary)
+    }
+
     private func dimensionField(_ title: String, text: Binding<String>) -> some View {
         VStack(alignment: .leading, spacing: 2) {
-            Text(title).font(.caption)
+            Text(title).font(.caption).accessibilityHidden(true)
             TextField("0", text: text)
                 .textFieldStyle(.roundedBorder)
                 .frame(width: 84)
-                .accessibilityLabel("Stock \(title) in millimetres")
+                .accessibilityLabel(AccessibilityText.stockFieldLabel(title))
+                .accessibilityValue(text.wrappedValue)
+                .accessibilityHint(AccessibilityText.stockFieldHint(title))
+                .accessibilitySortPriority(AccessibilityPriority.secondary)
         }
     }
 

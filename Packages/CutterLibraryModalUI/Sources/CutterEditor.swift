@@ -28,7 +28,9 @@ public struct CutterEditor: View {
                     }
                 }
                 .accessibilityLabel("Cutter type")
+                .accessibilityHint("Chooses which dimension fields are required")
                 .accessibilityIdentifier("cutter-type-picker")
+                .accessibilitySortPriority(AccessibilityPriority.header)
             }
 
             Section("Dimensions and starting values") {
@@ -40,8 +42,10 @@ public struct CutterEditor: View {
             if let firstError = firstError() {
                 Text(firstError)
                     .font(.caption)
-                    .foregroundStyle(.red)
+                    .modifier(ContrastAwareError())
+                    .accessibilityLabel("Cutter error: \(firstError)")
                     .accessibilityIdentifier("cutter-editor-first-error")
+                    .accessibilitySortPriority(AccessibilityPriority.error)
             }
         }
         .accessibilityIdentifier("cutter-editor")
@@ -59,13 +63,18 @@ public struct CutterEditor: View {
             )
             .textFieldStyle(.roundedBorder)
             .accessibilityLabel(field.label)
+            .accessibilityValue(model.fields[field] ?? "")
+            .accessibilityHint(AccessibilityText.fieldHint(for: field))
             .accessibilityIdentifier("cutter-field-\(field.rawValue)")
+            .accessibilitySortPriority(AccessibilityPriority.secondary)
 
             if let error = model.fieldError(field) {
                 Text(error)
                     .font(.caption)
-                    .foregroundStyle(.red)
+                    .modifier(ContrastAwareError())
+                    .accessibilityLabel("\(field.label) error: \(error)")
                     .accessibilityIdentifier("cutter-field-error-\(field.rawValue)")
+                    .accessibilitySortPriority(AccessibilityPriority.error)
             }
         }
     }

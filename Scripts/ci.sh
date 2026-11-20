@@ -12,6 +12,9 @@ fi
 echo "==> Format lint"
 swift format lint --configuration .swift-format --recursive Package.swift App Packages
 
+echo "==> Offline audit"
+bash Scripts/offline-audit.sh
+
 echo "==> Build"
 swift build
 

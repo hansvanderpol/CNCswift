@@ -16,27 +16,39 @@ public struct GenerateControls: View {
         VStack(alignment: .leading, spacing: 10) {
             Divider()
 
-            Text("Before generating").font(.headline)
+            Text("Before generating")
+                .font(.headline)
+                .accessibilityAddTraits(.isHeader)
+                .accessibilitySortPriority(AccessibilityPriority.header)
             let blockers = model.blockers()
             if blockers.isEmpty {
                 Label("All confirmations complete", systemImage: "checkmark.circle.fill")
                     .font(.caption)
                     .foregroundStyle(.green)
                     .accessibilityIdentifier("generation-unblocked")
+                    .accessibilitySortPriority(AccessibilityPriority.status)
             } else {
                 VStack(alignment: .leading, spacing: 3) {
                     ForEach(blockers, id: \.self) { blocker in
                         Label(blocker.message, systemImage: "exclamationmark.triangle")
                             .font(.caption)
+                            .accessibilityLabel("Blocker: \(blocker.message)")
                     }
                 }
                 .accessibilityIdentifier("generation-blockers")
+                .accessibilitySortPriority(AccessibilityPriority.findings)
             }
 
             ProgressView(value: progressValue)
                 .accessibilityLabel("Generation progress")
                 .accessibilityValue(
-                    "\(model.progressCompleted) of \(max(1, model.progressTotal)) stages")
+                    AccessibilityText.progress(
+                        completed: model.progressCompleted,
+                        total: model.progressTotal
+                    )
+                )
+                .accessibilityHint("Shows how many generation stages have completed")
+                .accessibilitySortPriority(AccessibilityPriority.status)
 
             HStack {
                 Button {
@@ -46,7 +58,10 @@ public struct GenerateControls: View {
                 }
                 .buttonStyle(.borderedProminent)
                 .disabled(!blockers.isEmpty || model.generationStatus == .running)
+                .accessibilityLabel("Generate G-code preview")
+                .accessibilityHint("Starts a write-free generation once every blocker is cleared")
                 .accessibilityIdentifier("generate-button")
+                .accessibilitySortPriority(AccessibilityPriority.primary)
 
                 if model.generationStatus == .running {
                     Button(role: .destructive) {
@@ -55,7 +70,10 @@ public struct GenerateControls: View {
                         Label("Cancel", systemImage: "xmark.circle")
                     }
                     .disabled(model.isCancellationRequested)
+                    .accessibilityLabel("Cancel generation")
+                    .accessibilityHint("Stops the current job without writing a file")
                     .accessibilityIdentifier("cancel-generation")
+                    .accessibilitySortPriority(AccessibilityPriority.primary)
                 }
 
                 Spacer()
@@ -64,6 +82,7 @@ public struct GenerateControls: View {
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .accessibilityIdentifier("generate-controls")
+        .accessibilityLabel("Generation controls")
     }
 
     private var progressValue: Double {
@@ -73,6 +92,16 @@ public struct GenerateControls: View {
 
     @ViewBuilder
     private var statusLabel: some View {
+        // The visible wording varies by state; VoiceOver gets one stable label plus a value.
+        statusView
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel("Generation status")
+            .accessibilityValue(AccessibilityText.generationStatus(model.generationStatus))
+            .accessibilitySortPriority(AccessibilityPriority.status)
+    }
+
+    @ViewBuilder
+    private var statusView: some View {
         switch model.generationStatus {
         case .idle:
             Text("Idle").font(.caption).foregroundStyle(.secondary)

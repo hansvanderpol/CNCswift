@@ -39,8 +39,11 @@ public struct SimulationPanel: View {
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
         } label: {
             Label("G-code simulation", systemImage: "cube")
+                .accessibilityAddTraits(.isHeader)
+                .accessibilitySortPriority(AccessibilityPriority.header)
         }
         .accessibilityIdentifier("simulation-panel")
+        .accessibilityLabel("G-code simulation")
     }
 
     @ViewBuilder
@@ -51,20 +54,29 @@ public struct SimulationPanel: View {
                 Label("No findings to review", systemImage: "checkmark.circle")
                     .font(.caption)
                     .foregroundStyle(.secondary)
+                    .accessibilitySortPriority(AccessibilityPriority.status)
             } else {
-                Text("Review before writing").font(.headline)
+                Text("Review before writing")
+                    .font(.headline)
+                    .accessibilityAddTraits(.isHeader)
+                    .accessibilitySortPriority(AccessibilityPriority.findings)
                 ForEach(findings, id: \.self) { finding in
                     Label(finding, systemImage: "exclamationmark.triangle")
                         .font(.caption)
                         .foregroundStyle(.red)
+                        .accessibilityLabel("Limit violation: \(finding)")
+                        .accessibilityHint("Review this finding before writing a file")
                         .accessibilityIdentifier("simulation-violation")
+                        .accessibilitySortPriority(AccessibilityPriority.findings)
                 }
                 if !model.simulation.findingsAcknowledged {
                     Button("Acknowledge findings") {
                         model.simulation.acknowledgeFindings()
                     }
                     .font(.caption)
+                    .accessibilityHint("Confirms the findings were reviewed before writing")
                     .accessibilityIdentifier("acknowledge-findings")
+                    .accessibilitySortPriority(AccessibilityPriority.primary)
                 }
             }
         }
@@ -135,7 +147,13 @@ public struct SimulationPanel: View {
                 return .handled
             }
             .accessibilityLabel("3D material removal preview")
+            .accessibilityValue(
+                "Yaw \(Int(yaw * 180 / .pi)) degrees, pitch \(Int(pitch * 180 / .pi)) degrees, "
+                    + "distance \(Int(distance))"
+            )
             .accessibilityHint("Arrow keys change the view; plus and minus zoom.")
+            .accessibilityAddTraits(.isImage)
+            .accessibilitySortPriority(AccessibilityPriority.primary)
         } else {
             VStack(spacing: 8) {
                 Image(systemName: "cube.transparent")
@@ -149,7 +167,12 @@ public struct SimulationPanel: View {
                     .multilineTextAlignment(.center)
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .accessibilityLabel(
+                model.simulation.isCancelled ? "Simulation cancelled" : "No preview yet"
+            )
+            .accessibilityHint("Generate G-code to preview the carved stock before writing a file")
             .accessibilityIdentifier("simulation-placeholder")
+            .accessibilitySortPriority(AccessibilityPriority.primary)
         }
     }
 
@@ -161,13 +184,19 @@ public struct SimulationPanel: View {
                 } label: {
                     Label("Cancel", systemImage: "xmark.circle")
                 }
+                .accessibilityLabel("Cancel simulation")
+                .accessibilityHint("Stops the simulation without writing a file")
                 .accessibilityIdentifier("cancel-simulation")
+                .accessibilitySortPriority(AccessibilityPriority.primary)
             }
             Spacer()
             if let simulation = model.simulation.result {
                 Text("Removed \(Int(simulation.removedVolume)) mm³")
                     .font(.caption)
                     .foregroundStyle(.secondary)
+                    .accessibilityLabel("Removed material")
+                    .accessibilityValue("\(Int(simulation.removedVolume)) cubic millimetres")
+                    .accessibilitySortPriority(AccessibilityPriority.status)
             }
             Button {
                 Task { await model.commitProgram() }
@@ -176,7 +205,10 @@ public struct SimulationPanel: View {
             }
             .buttonStyle(.borderedProminent)
             .disabled(!model.simulation.canWrite)
+            .accessibilityLabel("Write G-code file")
+            .accessibilityHint("Writes the previewed program after all findings are acknowledged")
             .accessibilityIdentifier("write-gcode")
+            .accessibilitySortPriority(AccessibilityPriority.primary)
         }
     }
 
@@ -189,43 +221,52 @@ public struct SimulationPanel: View {
                 Image(systemName: "chevron.left")
             }
             .accessibilityLabel("Orbit left")
+            .accessibilitySortPriority(AccessibilityPriority.navigation)
             Button {
                 model.camera.navigate(.orbitRight)
             } label: {
                 Image(systemName: "chevron.right")
             }
             .accessibilityLabel("Orbit right")
+            .accessibilitySortPriority(AccessibilityPriority.navigation)
             Button {
                 model.camera.navigate(.orbitUp)
             } label: {
                 Image(systemName: "chevron.up")
             }
             .accessibilityLabel("Orbit up")
+            .accessibilitySortPriority(AccessibilityPriority.navigation)
             Button {
                 model.camera.navigate(.orbitDown)
             } label: {
                 Image(systemName: "chevron.down")
             }
             .accessibilityLabel("Orbit down")
+            .accessibilitySortPriority(AccessibilityPriority.navigation)
             Button {
                 model.camera.navigate(.zoomIn)
             } label: {
                 Image(systemName: "plus.magnifyingglass")
             }
             .accessibilityLabel("Zoom in")
+            .accessibilitySortPriority(AccessibilityPriority.navigation)
             Button {
                 model.camera.navigate(.zoomOut)
             } label: {
                 Image(systemName: "minus.magnifyingglass")
             }
             .accessibilityLabel("Zoom out")
+            .accessibilitySortPriority(AccessibilityPriority.navigation)
             Button("Reset") { model.camera.navigate(.reset) }
                 .font(.caption)
                 .accessibilityLabel("Reset preview camera")
+                .accessibilitySortPriority(AccessibilityPriority.navigation)
         }
         .buttonStyle(.borderless)
         .disabled(model.simulation.result == nil)
         .accessibilityIdentifier("simulation-navigation")
+        .accessibilityLabel("Preview navigation")
+        .accessibilityHint("Arrow keys also orbit the preview; plus and minus zoom")
     }
 
     /// Stock-space Z is up; RealityKit's virtual camera uses Y up. The remaining rotations map the
