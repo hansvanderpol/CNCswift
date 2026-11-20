@@ -90,9 +90,11 @@ public protocol PipelineRunning: Sendable {
 
     /// Writes exactly one atomically replaced `.nc` file, gated by `confirmation`.
     ///
-    /// - Preconditions: the program came from a `.ready` run whose preview was shown and whose
-    ///   findings were acknowledged.
-    /// - Throws: A typed error when the confirmation is incomplete or the write fails.
+    /// - Preconditions: the program came from a `.ready` run whose preview was shown, whose
+    ///   findings were acknowledged, whose simulation completed without cancellation, and whose
+    ///   validated program and simulation carry no violations or errors (FR-064, FR-066).
+    /// - Throws: A typed error when the confirmation, provenance, findings, violations, or
+    ///   simulation state refuses the write; the writer's error when the atomic write fails.
     func commit(
         _ program: RenderedProgram,
         confirmation: WriteConfirmation,

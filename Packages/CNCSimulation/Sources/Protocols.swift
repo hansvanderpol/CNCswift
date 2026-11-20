@@ -53,6 +53,22 @@ public struct SimulationViolation: Sendable, Equatable {
     }
 }
 
+/// A rapid traverse retained for the preview only (FR-063, FR-070).
+///
+/// Rapids never remove material, but showing them in a distinct colour lets the operator see that
+/// the preview's surface was carved by cutting moves alone.
+public struct SimulationSegment: Sendable, Equatable {
+    public let start: Vec3
+    public let end: Vec3
+    public let lineNumber: Int?
+
+    public init(start: Vec3, end: Vec3, lineNumber: Int? = nil) {
+        self.start = start
+        self.end = end
+        self.lineNumber = lineNumber
+    }
+}
+
 /// The result of simulating the validated program.
 ///
 /// `cancelled` is distinct from failure: a cancelled simulation produces no preview and cannot be
@@ -69,6 +85,9 @@ public struct SimulationResult: Sendable, Equatable {
     /// Envelope and limit findings surfaced before writing.
     public let violations: [SimulationViolation]
 
+    /// Rapid traverses, preserved for visual distinction in the preview. Never swept into `heightmap`.
+    public let rapids: [SimulationSegment]
+
     /// Whether simulation stopped on request before completion.
     public let cancelled: Bool
 
@@ -77,12 +96,14 @@ public struct SimulationResult: Sendable, Equatable {
         resolution: Double,
         removedVolume: Double,
         violations: [SimulationViolation],
+        rapids: [SimulationSegment] = [],
         cancelled: Bool
     ) {
         self.heightmap = heightmap
         self.resolution = resolution
         self.removedVolume = removedVolume
         self.violations = violations
+        self.rapids = rapids
         self.cancelled = cancelled
     }
 }

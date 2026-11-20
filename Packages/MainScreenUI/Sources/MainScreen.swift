@@ -49,24 +49,8 @@ public struct MainScreen: View {
                     }
                     .accessibilityIdentifier("main-screen-job-panel")
 
-                    GroupBox {
-                        VStack(spacing: 8) {
-                            Image(systemName: "cube.transparent")
-                                .font(.system(size: 34))
-                                .foregroundStyle(.secondary)
-                            Text("G-code simulation placeholder")
-                                .font(.headline)
-                            Text("The interactive preview is added in User Story 3.")
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-                                .multilineTextAlignment(.center)
-                        }
-                        .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    } label: {
-                        Label("G-code simulation", systemImage: "cube")
-                    }
-                    .frame(minWidth: 230, idealWidth: 320)
-                    .accessibilityIdentifier("simulation-panel-placeholder")
+                    SimulationPanel(model: model)
+                        .frame(minWidth: 230, idealWidth: 320)
                 }
             }
             .padding(16)

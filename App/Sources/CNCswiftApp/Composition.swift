@@ -34,11 +34,12 @@ private final class CancellationFlag: @unchecked Sendable {
     }
 }
 
-/// US1 composition root.
+/// Application composition root.
 ///
 /// The app owns no domain state: it loads cutters and materials from the Foundational stores,
-/// decodes the selected STL, and injects write-free generation into the main-screen model. The
-/// preview simulator is the documented US1 stub; US3 replaces it without changing this wiring.
+/// decodes the selected STL, and injects write-free generation into the main-screen model. US3
+/// supplies the real material-removal simulator and keeps the write behind an explicit commit
+/// after the preview has been shown and the findings acknowledged.
 @MainActor
 @Observable
 final class AppComposition {
@@ -63,6 +64,11 @@ final class AppComposition {
     private var loadedModel: MeshDocument?
     private var pipeline: ToolpathService
     private var cutterChangeTask: Task<Void, Never>?
+
+    /// The exact program prepared by the last `.ready` run. Only this value may be committed;
+    /// a new run clears it so a stale preview cannot authorize a later write.
+    private var preparedProgram: RenderedProgram?
+    private var preparedDestination: URL?
 
     init(fileSystem: any FileSystem = DiskFileSystem()) {
         self.fileSystem = fileSystem
@@ -96,6 +102,24 @@ final class AppComposition {
         }
         model.loadModel = { [weak self] url in
             await self?.loadModel(url: url) ?? false
+        }
+        model.commit = { [weak self] in
+            guard let self, let program = self.preparedProgram,
+                let destination = self.preparedDestination
+            else { return false }
+            let confirmation = WriteConfirmation(
+                previewShown: self.model.simulation.previewShown,
+                findingsAcknowledged: self.model.simulation.findingsAcknowledged
+            )
+            do {
+                try await self.pipeline.commit(program, confirmation: confirmation, to: destination)
+                self.preparedProgram = nil
+                self.preparedDestination = nil
+                return true
+            } catch {
+                self.model.reportFailure(error.localizedDescription)
+                return false
+            }
         }
     }
 
@@ -174,6 +198,9 @@ final class AppComposition {
         do {
             let decoded = try await STLDecoder.decode(url: url, progress: progressSink())
             loadedModel = decoded
+            preparedProgram = nil
+            preparedDestination = nil
+            model.simulation.reset()
             model.markModelLoaded(fileName: url.lastPathComponent)
             model.updateStock(
                 width: max(1, decoded.bounds.max.x - decoded.bounds.min.x),
@@ -189,6 +216,9 @@ final class AppComposition {
             return true
         } catch {
             loadedModel = nil
+            preparedProgram = nil
+            preparedDestination = nil
+            model.simulation.reset()
             model.clearModel()
             model.reportFailure(error.localizedDescription)
             return false
@@ -212,6 +242,9 @@ final class AppComposition {
             appliedScale: model.appliedScale,
             fileSystem: fileSystem
         )
+        preparedProgram = nil
+        preparedDestination = nil
+        model.simulation.reset()
 
         let job = JobSettings(
             mesh: document.mesh,
@@ -243,11 +276,19 @@ final class AppComposition {
             )
             let outcome = try await pipeline.run(request, progress: progressSink())
             switch outcome {
-            case .ready:
+            case .ready(let program, let report, let simulation):
+                preparedProgram = program
+                preparedDestination = request.destination
+                model.simulation.showPreview(
+                    simulation,
+                    findings: report.findings.map(\.message)
+                )
                 return .ready
             case .blocked(let findings):
+                model.simulation.reset()
                 return .blocked(findings.map(\.message))
             case .cancelled:
+                model.simulation.reportCancelled()
                 return .cancelled
             }
         } catch {
@@ -306,36 +347,8 @@ final class AppComposition {
             planner: ToolpathPlanner(),
             renderer: GCodeEmitter(modelFileName: modelFileName, appliedScale: appliedScale),
             validator: GRBLValidator(),
-            simulator: US1StubSimulator(),
+            simulator: ZMapSimulator(resolution: 2),
             writer: FileWriter(fileSystem: fileSystem)
-        )
-    }
-}
-
-/// The US1 preview stub replaced by the real material-removal simulator in T102.
-private struct US1StubSimulator: MaterialRemovalSimulating {
-    func simulate(
-        _ program: ParsedProgram,
-        job: JobSettings,
-        profile: MachineProfile,
-        progress: ProgressSink
-    ) async throws -> SimulationResult {
-        _ = (program, profile)
-        let origin = Vec3(x: 0, y: 0, z: 0)
-        let heightmap = Heightmap(
-            columns: 1,
-            rows: 1,
-            resolution: 1,
-            origin: origin,
-            values: [-job.stock.height]
-        )
-        let cancelled = Task.isCancelled || progress.isCancelled()
-        return SimulationResult(
-            heightmap: heightmap,
-            resolution: 1,
-            removedVolume: 0,
-            violations: [],
-            cancelled: cancelled
         )
     }
 }

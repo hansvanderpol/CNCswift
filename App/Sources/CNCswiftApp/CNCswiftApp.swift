@@ -15,7 +15,9 @@ struct CNCswiftApp: App {
         )
     }
 
-    var body: some Scene {
+    // `RealityKit.Scene` is also in the module graph through MainScreenUI; qualify SwiftUI's
+    // scene protocol so the app scene cannot bind to the rendering type (D3).
+    var body: some SwiftUI.Scene {
         WindowGroup {
             MainScreen(
                 model: composition.model,

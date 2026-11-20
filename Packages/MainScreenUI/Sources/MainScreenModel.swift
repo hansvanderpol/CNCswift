@@ -158,6 +158,11 @@ public final class MainScreenModel {
     public private(set) var progressTotal: Int
     public private(set) var isCancellationRequested: Bool
 
+    /// The live preview state and orbit controls for the third main-screen panel (FR-061, FR-070).
+    /// They are owned here so the panel views stay free of pipeline and file-system references.
+    public let simulation = SimulationModel()
+    public let camera = SimulationCamera()
+
     /// Injected by the composition root; the UI never imports the pipeline package directly.
     ///
     /// These closures are main-actor isolated because the state they read and write belongs to the
@@ -165,6 +170,7 @@ public final class MainScreenModel {
     public var generate: (@MainActor () async -> MainScreenGenerationStatus)?
     public var cancel: (@MainActor () -> Void)?
     public var loadModel: (@MainActor (URL) async -> Bool)?
+    public var commit: (@MainActor () async -> Bool)?
 
     public init(
         selectedCutterID: CutterID? = nil,
@@ -356,6 +362,7 @@ public final class MainScreenModel {
     public func reportProgress(completed: Int, total: Int) {
         progressCompleted = completed
         progressTotal = total
+        simulation.reportProgress(completed: completed, total: total)
     }
 
     /// Surfaces a composition or generation failure without changing confirmation state.
@@ -367,5 +374,15 @@ public final class MainScreenModel {
     public func requestCancellation() {
         isCancellationRequested = true
         cancel?()
+    }
+
+    /// Commits the previewed program through the injected, post-preview write seam (FR-026).
+    ///
+    /// The write itself is enforced by the pipeline's commit gate; this method only forwards the
+    /// operator's intent and returns whether the file was written.
+    @discardableResult
+    public func commitProgram() async -> Bool {
+        guard let commit else { return false }
+        return await commit()
     }
 }

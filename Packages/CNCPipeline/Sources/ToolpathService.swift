@@ -14,6 +14,7 @@ public enum PipelineError: Error, Equatable, Sendable {
     case incompleteConfirmation
     case blockedProgram
     case cancelledProgram
+    case unacknowledgedViolations
 
     public var userMessage: String {
         switch self {
@@ -25,6 +26,8 @@ public enum PipelineError: Error, Equatable, Sendable {
             return "The validated program has errors and cannot be written."
         case .cancelledProgram:
             return "Generation was cancelled; no file was written."
+        case .unacknowledgedViolations:
+            return "Resolve every simulation violation before writing the file."
         }
     }
 }
@@ -131,8 +134,12 @@ public actor ToolpathService: PipelineRunning {
         guard !report.hasErrors else { throw PipelineError.blockedProgram }
 
         switch prepared[ProgramKey(program)] {
-        case .ready:
-            break
+        case .ready(let validatedReport, let simulation):
+            guard !simulation.cancelled else { throw PipelineError.cancelledProgram }
+            guard simulation.violations.isEmpty else {
+                throw PipelineError.unacknowledgedViolations
+            }
+            guard !validatedReport.hasErrors else { throw PipelineError.blockedProgram }
         case .blocked:
             throw PipelineError.blockedProgram
         case .cancelled:

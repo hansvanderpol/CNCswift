@@ -208,14 +208,14 @@ Do not silently rewrite `spec.md` while implementing. The clarified spec, `plan.
 
 ### Implementation for User Story 3
 
-- [ ] T096 [US3] Implement cutter-sweep z-map removal from `ParsedProgram` with documented stock-space resolution and no removal on rapids (FR-061, FR-062, FR-063, FR-065) — `Packages/CNCSimulation/Sources/ZMap.swift`
-- [ ] T097 [US3] Implement heightmap-to-mesh conversion with computed normals for RealityKit (FR-061) — `Packages/CNCSimulation/Sources/PreviewMesh.swift`
-- [ ] T098 [US3] Implement collection of named envelope and limit violations from the validated program (FR-064) — `Packages/CNCSimulation/Sources/Violations.swift`
-- [ ] T099 [US3] Implement the `RealityView` preview panel in the third slot, qualifying the app scene as `SwiftUI.Scene` (FR-055, FR-061, D3) — `Packages/MainScreenUI/Sources/SimulationPanel.swift`
-- [ ] T100 [US3] Implement camera and keyboard navigation for the 3D preview, with rapids visually distinct from cuts (FR-063, FR-070) — `Packages/MainScreenUI/Sources/SimulationCamera.swift`
-- [ ] T101 [US3] Implement simulation progress, cancel, and the violation list above the preview (FR-064, FR-066, FR-069) — `Packages/MainScreenUI/Sources/SimulationModel.swift`
-- [ ] T102 [US3] Replace the US1 stub simulator in `ToolpathService` with the real simulator, keeping validate → simulate → commit order and no write in `run` (FR-061, FR-065, clarification Q6) — `Packages/CNCPipeline/Sources/ToolpathService.swift`
-- [ ] T103 [US3] Harden `commit` so it requires `previewShown == true`, zero unacknowledged error findings, no simulation violations, and a non-cancelled simulation before writing (FR-026, FR-064, FR-066, SC-011, clarification Q6) — `Packages/CNCPipeline/Sources/ToolpathService.swift`
+- [X] T096 [US3] Implement cutter-sweep z-map removal from `ParsedProgram` with documented stock-space resolution and no removal on rapids (FR-061, FR-062, FR-063, FR-065) — `Packages/CNCSimulation/Sources/ZMap.swift`
+- [X] T097 [US3] Implement heightmap-to-mesh conversion with computed normals for RealityKit (FR-061) — `Packages/CNCSimulation/Sources/PreviewMesh.swift`
+- [X] T098 [US3] Implement collection of named envelope and limit violations from the validated program (FR-064) — `Packages/CNCSimulation/Sources/Violations.swift`
+- [X] T099 [US3] Implement the `RealityView` preview panel in the third slot, qualifying the app scene as `SwiftUI.Scene` (FR-055, FR-061, D3) — `Packages/MainScreenUI/Sources/SimulationPanel.swift`
+- [X] T100 [US3] Implement camera and keyboard navigation for the 3D preview, with rapids visually distinct from cuts (FR-063, FR-070) — `Packages/MainScreenUI/Sources/SimulationCamera.swift`
+- [X] T101 [US3] Implement simulation progress, cancel, and the violation list above the preview (FR-064, FR-066, FR-069) — `Packages/MainScreenUI/Sources/SimulationModel.swift`
+- [X] T102 [US3] Replace the US1 stub simulator in `ToolpathService` with the real simulator, keeping validate → simulate → commit order and no write in `run` (FR-061, FR-065, clarification Q6) — `Packages/CNCPipeline/Sources/ToolpathService.swift`
+- [X] T103 [US3] Harden `commit` so it requires `previewShown == true`, zero unacknowledged error findings, no simulation violations, and a non-cancelled simulation before writing (FR-026, FR-064, FR-066, SC-011, clarification Q6) — `Packages/CNCPipeline/Sources/ToolpathService.swift`
 
 **Checkpoint**: All three stories work independently; the main screen has its three mandated panels and the file is written only after the preview. Run quickstart VS-5.
 

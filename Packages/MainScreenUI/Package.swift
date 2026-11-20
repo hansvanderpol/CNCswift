@@ -11,8 +11,10 @@ let package = Package(
     dependencies: [
         .package(path: "../CNCCutters"),
         .package(path: "../CNCCuttersStore"),
+        .package(path: "../CNCGeometry"),
         .package(path: "../CNCMachineProfile"),
         .package(path: "../CNCMaterials"),
+        .package(path: "../CNCSimulation"),
         .package(path: "../CNCToolpath"),
     ],
     targets: [
@@ -21,8 +23,10 @@ let package = Package(
             dependencies: [
                 .product(name: "CNCCutters", package: "CNCCutters"),
                 .product(name: "CNCCuttersStore", package: "CNCCuttersStore"),
+                .product(name: "CNCGeometry", package: "CNCGeometry"),
                 .product(name: "CNCMachineProfile", package: "CNCMachineProfile"),
                 .product(name: "CNCMaterials", package: "CNCMaterials"),
+                .product(name: "CNCSimulation", package: "CNCSimulation"),
                 .product(name: "CNCToolpath", package: "CNCToolpath"),
             ],
             path: "Sources",
@@ -34,8 +38,10 @@ let package = Package(
                 "MainScreenUI",
                 .product(name: "CNCCutters", package: "CNCCutters"),
                 .product(name: "CNCCuttersStore", package: "CNCCuttersStore"),
+                .product(name: "CNCGeometry", package: "CNCGeometry"),
                 .product(name: "CNCMachineProfile", package: "CNCMachineProfile"),
                 .product(name: "CNCMaterials", package: "CNCMaterials"),
+                .product(name: "CNCSimulation", package: "CNCSimulation"),
                 .product(name: "CNCToolpath", package: "CNCToolpath"),
             ],
             path: "Tests",
