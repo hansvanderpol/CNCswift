@@ -2,7 +2,7 @@
 
 **Branch**: `001-stl-to-gcode` | **Date**: 2026-11-17 | **Spec**: [spec.md](./spec.md)
 
-**Input**: Feature specification from `/specs/001-stl-to-gcode/spec.md` (83 functional requirements, 13 success criteria, seven clarification answers recorded on 2026-11-17 and two on 2026-11-18, plus the 2026-11-20 spec refinement), reconciled with constitution v4.3.0.
+**Input**: Feature specification from `/specs/001-stl-to-gcode/spec.md` (84 functional requirements, 13 success criteria, seven clarification answers recorded on 2026-11-17 and two on 2026-11-18, plus the 2026-11-20 spec refinement), reconciled with constitution v4.3.0.
 
 ## Summary
 
@@ -88,7 +88,7 @@ deviation; the sandbox entitlement is never dropped to work around signing.
 | II. Modular Package-First Architecture | Domain, persistence, and IO in `Packages/`; app target is composition root only; one-way dependencies `presentation -> pipeline -> stages`; SPM authoritative for build/test; Xcode-project clause conditional; CLT toolchain accepted per v4.3.0 | PASS — five new packages justified below; SPM/CLT compliant, no deviation |
 | III. Test-First (NON-NEGOTIABLE) | Swift Testing target per package; failing test first; injected clock and injected file system so no test touches real time or the real Application Support directory | PASS — with the verified tooling workaround (D2) |
 | IV. Native macOS Fidelity and Accessibility | SwiftUI default; keyboard-only operation; accessibility labels/roles/values; sandboxed with declared entitlements; no data leaves the machine | PASS |
-| V. Observability, Diagnostics, and Error Discipline | `os.Logger` per module with stable categories; typed errors with correlation identifiers; progress and cancellation distinguished from failure; DocC on public API | PASS |
+| V. Observability, Diagnostics, and Error Discipline | `os.Logger` per module with stable categories; typed errors with correlation identifiers; progress and cancellation distinguished from failure; DocC on public API; sensitive payloads redacted or marked private by `CNCDiagnostics` under FR-084 (T125–T128) | PASS |
 | VI. STL to Machine-Ready G-code | Decode, toolpath, post-process, validate as separate packages with typed boundaries; one versioned profile; no dialect literals in the pipeline; fixed start/stop blocks; 80-character line limit; envelope and limit rejection (never clamping); deterministic output | PASS — rapid ceiling is controller setup per constitution v4.1.0, retained through v4.3.0 |
 | VII. G-code Main Screen and Cutter Library Modal | Three-panel main screen; separate modal module; no shared mutable state; persisted library as the only contract; closed cutter enum with per-type dimensions; validated at entry; Application Support, atomic, versioned, forward-only migrations | PASS |
 | Technology Stack — Distribution (v4.3.0) | SPM/CLT bundles signed ad hoc with `/usr/bin/codesign --sign -`; Xcode builds use default local signing; sandbox entitlement retained; no App Store submission, Developer ID signing, or notarization | PASS — verified by `Scripts/make-app.sh` and quickstart |
@@ -235,6 +235,7 @@ Re-evaluated after Phase 1 design and again against constitution v4.3.0. All sev
 - **Determinism**: `generatedAt` is an injected `Date`, so the determinism test uses two fixed clocks and no real time (Principle III, FR-028).
 - **Presentation separation**: `MainScreenUI` and `CutterLibraryModalUI` still never import each other; the library-to-generation contract test runs from the neutral `CNCPipeline` test target, which may import both (FR-050, FR-060, SC-007).
 - **A14 closed (2026-11-20)**: the ambiguity resolutions previously held only in this plan and in `tasks.md` are now canonical in `spec.md` Clarifications, Session 2026-11-20 — ASCII-only emission (FR-082), FR-041 effective-radius formula, SC-012 five-fixture threshold, validation-versus-preview findings, laser tokens (FR-031), and preset-provisional status. `plan.md` and `tasks.md` are indexes to those entries, not the resolver, satisfying the constitution's Development Workflow ambiguity gate.
+- **CT1 closed (2026-11-20)**: FR-084 records the Principle V redaction MUST in `spec.md`. `DiagnosticLogger` keeps only stable category and correlation metadata public, emits the message body with private privacy, and accepts explicit `SensitiveValue` payloads that are redacted before emission. A failing-first test and a lexical guard against direct `Logger(` construction or whole-message `privacy: .public` interpolation enforce it (T125–T128).
 
 ## Task-shaping notes for `/speckit.tasks`
 

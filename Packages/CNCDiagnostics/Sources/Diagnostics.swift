@@ -118,30 +118,43 @@ public struct DiagnosticLogger: Sendable {
 
     /// Logs a typed stage failure at error level and returns the emitted record.
     ///
-    /// - Parameter category: Overrides the logger's default category for this record.
+    /// - Parameters:
+    ///   - category: Overrides the logger's default category for this record.
+    ///   - sensitive: Payloads to redact before they reach the emitted record and `os.Logger`.
     @discardableResult
-    public func record(_ error: any CNCError, category: String? = nil) -> DiagnosticLogRecord {
+    public func record(
+        _ error: any CNCError,
+        category: String? = nil,
+        sensitive: [SensitiveValue] = []
+    ) -> DiagnosticLogRecord {
         let categoryName = category ?? self.category.rawValue
         let record = DiagnosticLogRecord(
             correlationID: error.correlationID,
             category: categoryName,
-            message: "\(error.userMessage) [\(error.correlationID)]"
+            message:
+                "\(error.userMessage) [\(error.correlationID)]\(Self.redactedSuffix(sensitive))"
         )
         emit(record, level: .error)
         return record
     }
 
     /// Logs a failure described by text, generating a correlation identifier when none is supplied.
+    ///
+    /// - Parameters:
+    ///   - message: The actionable message, which must not contain raw sensitive values.
+    ///   - correlationID: Overrides the generated identifier when supplied.
+    ///   - sensitive: Payloads to redact before they reach the emitted record and `os.Logger`.
     @discardableResult
     public func error(
         _ message: String,
-        correlationID: CorrelationID? = nil
+        correlationID: CorrelationID? = nil,
+        sensitive: [SensitiveValue] = []
     ) -> DiagnosticLogRecord {
         let identifier = correlationID ?? CorrelationID(UUID().uuidString)
         let record = DiagnosticLogRecord(
             correlationID: identifier,
             category: category.rawValue,
-            message: "[\(identifier)] \(message)"
+            message: "[\(identifier)] \(message)\(Self.redactedSuffix(sensitive))"
         )
         emit(record, level: .error)
         return record
@@ -159,8 +172,19 @@ public struct DiagnosticLogger: Sendable {
         return record
     }
 
+    /// Builds the redacted portion of a message; sensitive contents never enter the result.
+    private static func redactedSuffix(_ values: [SensitiveValue]) -> String {
+        guard !values.isEmpty else { return "" }
+        return " sensitive=" + values.map(\.logDescription).joined(separator: ",")
+    }
+
     private func emit(_ record: DiagnosticLogRecord, level: OSLogType) {
         let logger = Logger(subsystem: subsystem, category: record.category)
-        logger.log(level: level, "\(record.message, privacy: .public)")
+        // The category and correlation identifier stay public for filtering and correlation;
+        // the message body is private and its sensitive payloads are already redacted (FR-084).
+        logger.log(
+            level: level,
+            "\(record.correlationID.rawValue, privacy: .public): \(record.message, privacy: .private)"
+        )
     }
 }

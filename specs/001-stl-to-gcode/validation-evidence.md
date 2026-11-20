@@ -80,6 +80,30 @@ The desktop walkthroughs in `accessibility-audit.md` — VoiceOver tab order thr
 Full Keyboard Access on/off, Increase Contrast and Reduce Motion — remain human verification and
 are recorded as pending there, not claimed here.
 
+## Re-verification (2026-11-20)
+
+`Scripts/ci.sh` re-run on 2026-11-20: exit 0 — format lint, DocC gate (99 files), offline audit,
+workspace build, all 16 package suites green, golden fixture guard clean. SC-001 benchmark:
+`triangles=200000 moves=3598 bytes=51551 decode=0.265s generation=0.053s validate=0.028s
+total=0.346s findings=0`. SC-012 preview benchmark: five of five reference models each ≤ 0.006 s.
+Automated SC-006 (`EmptyLibraryTests`) and SC-009 (`MainScreenUI`/`CutterLibraryModalUI`
+accessibility suites) evidence is current.
+
+## Manual verification owed (2026-11-20)
+
+These steps cannot be driven from a non-interactive shell. T113 remains open until they are observed
+on the desktop and the results are recorded here. `checklists/requirements.md` markers stay
+untouched as a read-only gate.
+
+| # | Criterion | Desktop step | Record |
+|---|-----------|--------------|--------|
+| M1 | SC-006 | From an absent cutter library, launch the app, add the first cutter, choose a reference STL, and reach a validated `.nc` **without help**. Time the full GUI flow; the target is under five seconds for entry as measured by `EmptyLibraryTests`. | elapsed time, pass/fail |
+| M2 | SC-009 | With VoiceOver on, Tab through load STL → confirm units → confirm feed/spindle → confirm job values → acknowledge findings → write file. Every control must be reachable and announce a meaningful label/value; no pointing device. | pass/fail + any unlabeled control |
+| M3 | SC-009 | Repeat for the cutter library: open with ⇧⌘L, add a valid cutter, edit it, save, close. | pass/fail |
+| M4 | SC-009 | Repeat M2 and M3 with Full Keyboard Access on **and** off, Increase Contrast on, and Reduce Motion on. Confirm focus indicators stay visible and no animation plays under Reduce Motion. | pass/fail per setting |
+
+Detail and result columns are in `accessibility-audit.md`.
+
 ## Re-run command
 
 ```bash

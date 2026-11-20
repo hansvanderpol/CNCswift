@@ -268,6 +268,29 @@ Do not rewrite `spec.md` silently while implementing. The clarified `spec.md` (i
 
 ---
 
+## Phase 8: Follow-up — CT1 logging redaction (Constitution Principle V)
+
+**Purpose**: Close the CRITICAL `/speckit.analyze` finding CT1. Principle V requires that no secret, credential, or identifying value MAY be logged and that sensitive payloads MUST be redacted or marked private. `DiagnosticLogger.emit` currently interpolates the whole record message with `privacy: .public` (`Packages/CNCDiagnostics/Sources/Diagnostics.swift:164`), so a typed failure carrying a file path or a user-supplied value reaches the log in clear text. Apply the accepted remediation: record a canonical FR, extend the plan's Principle V gate, then add the failing test and the redacting implementation.
+
+**⚠️ CRITICAL**: T126 must fail for the right reason before T127 is started (constitution Principle III).
+
+### Record the requirement
+
+- [X] T125 Record the CT1 requirement canonically before touching code: add `FR-084` to `spec.md` immediately after FR-068 in the "Diagnostics, accessibility, and privacy" subsection, requiring that no secret, credential, or identifying value appear in clear text in a log, that sensitive payloads be redacted or marked private (`os.Logger` `.private`) before emission, and that the actionable user message under FR-067 remain public; extend the `plan.md` Constitution Check Principle V row and the Post-Design Constitution Re-check with FR-084 and T125–T128 (constitution Principle V, FR-067, FR-068, CT1) — `specs/001-stl-to-gcode/spec.md`, `specs/001-stl-to-gcode/plan.md`
+
+### Tests for CT1 (write first; they must fail)
+
+- [X] T126 Write the failing redaction test: add `Packages/CNCDiagnostics/Tests/RedactionTests.swift` asserting (a) a sensitive payload passed through the new `SensitiveValue` wrapper never appears in clear text in the emitted log record while the correlation identifier, category, and actionable user message remain public, (b) `DiagnosticLogger.emit` no longer interpolates the whole message with `privacy: .public`, and (c) a lexical guard fails if any shipping `Packages/*/Sources/**/*.swift` file constructs `Logger(` directly or uses `privacy: .public` outside `CNCDiagnostics`; prove the tests fail before T127 (constitution Principle V, FR-084, FR-067, CT1) — `Packages/CNCDiagnostics/Tests/RedactionTests.swift`
+
+### Implementation and gates
+
+- [X] T127 Implement redaction in `CNCDiagnostics`: add a documented `SensitiveValue` wrapper whose logged form is a stable redaction marker or `.private` interpolation, change `DiagnosticLogger` so stable fields (`correlationID`, `category`, actionable `message`) stay public while every sensitive payload is redacted before reaching `os.Logger`, remove `privacy: .public` from `emit`, and keep `record`/`error`/`info` source-compatible with T018/T033 (constitution Principle V, FR-084, FR-067, FR-068, CT1) — `Packages/CNCDiagnostics/Sources/Diagnostics.swift`, `Packages/CNCDiagnostics/Sources/Redaction.swift`
+- [X] T128 Close the CT1 mapping and gates: add FR-084 and T125–T128 to the Requirement Coverage table, add a Notes entry recording CT1 as closed, then run `Scripts/ci.sh` and confirm all 16 suites green, the DocC gate passing, and zero `privacy: .public` log interpolations remaining (constitution Principle V, FR-084, CT1) — `specs/001-stl-to-gcode/tasks.md`, `Scripts/ci.sh`
+
+**Checkpoint**: FR-084 is canonical in `spec.md` and the plan gate, the redaction test failed before implementation, no sensitive payload reaches `os.Logger` in clear text, and `Scripts/ci.sh` is green.
+
+---
+
 ## Dependencies & Execution Order
 
 ### Phase dependencies
@@ -278,6 +301,7 @@ Do not rewrite `spec.md` silently while implementing. The clarified `spec.md` (i
 - **US2 (Phase 4)**: depends on Foundational; load/save and the change stream are already foundational, so US2 adds migration and the modal. T079 and T086 integrate with the US1 view model, so schedule them after T073.
 - **US3 (Phase 5)**: depends on Foundational; T102 and T103 integrate with the US1 pipeline, so schedule them after T067 and T068. T094 is the write-gate test and must precede T103.
 - **Polish (Phase 6)**: depends on the stories being hardened; T114 and T117 are the final gates.
+- **CT1 follow-up (Phase 8)**: depends on the Phase 6 final gates and the `/speckit.analyze` findings; order is T125 (record FR-084) → T126 (failing test) → T127 (redacting implementation) → T128 (coverage map and gates).
 
 ### User story dependencies
 
@@ -382,6 +406,7 @@ Every requirement is assigned to at least one task.
 | FR-081 | T040, T041, T054, T057 |
 | FR-082 | T043, T047, T057 |
 | FR-083 | T052, T068, T094, T103, T121, T122 |
+| FR-084 | T125, T126, T127, T128 | CT1 logging redaction; FR-084 is added to `spec.md` by T125. |
 | SC-001 | T112, T114 |
 | SC-002, SC-003 | T040, T047, T074, T114, T119, T120, T121, T122, T124 |
 | SC-004 | T014, T015, T016, T049, T050, T114, T120 |
@@ -410,3 +435,4 @@ Every requirement is assigned to at least one task.
 - The feature branch is declared in `spec.md` but does not exist in git yet; create `001-stl-to-gcode` before the first implementation commit.
 - Commit after each logical group, keep each pull request small, and run `Scripts/ci.sh` before calling work done.
 - C1 and C2 from `/speckit.analyze`: T120 makes insufficient cutter margin fail loudly (constitution Principle VI). T121–T124 apply the accepted C1 fix — a pipeline-level golden test and reviewed fixture generated from the unchanged `relief-demo-binary.stl`, an explicit read-only CI/update-script split, and a recorded production-output review. T121 follows T120 so the fixture reflects final placement semantics.
+- CT1 from `/speckit.analyze` is closed by T125–T128 (constitution Principle V): FR-084 is canonical in `spec.md`, the plan gate names it, and `DiagnosticLogger` redacts sensitive payloads instead of logging the whole message with `privacy: .public`.

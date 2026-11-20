@@ -219,6 +219,7 @@ Before committing a job, the maker looks at the simulation panel and sees the ma
 
 - **FR-067**: System MUST use typed errors, show the user an actionable message, and record the cause with a stable correlation identifier in a structured log.
 - **FR-068**: System MUST log through per-module structured logging with stable categories, and MUST NOT use unstructured console printing in shipping code.
+- **FR-084**: System MUST NOT write any secret, credential, or identifying value to a log in clear text. Sensitive payloads MUST be redacted or marked private before emission, while the stable correlation identifier, logging category, and actionable user message required by FR-067 and FR-068 remain diagnosable.
 - **FR-069**: System MUST report progress and allow cancellation for decoding, generation, and simulation whenever the model has at least 50,000 triangles, and MUST distinguish cancellation from failure in both the log and the interface.
 - **FR-070**: System MUST make every primary workflow operable by keyboard alone, and MUST expose accessibility labels, roles, and values on custom controls.
 - **FR-071**: System MUST honor VoiceOver, Increase Contrast, Reduce Motion, and full keyboard access.

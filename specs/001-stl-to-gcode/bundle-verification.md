@@ -44,8 +44,25 @@ the three reports dated 11:19 predate the resource-bundle fix recorded in `offli
 
 The process was terminated after the observation.
 
-## Still owed (desktop-only)
+## Re-verification (2026-11-20)
 
-Opening a user-selected STL through the sandbox's file picker and confirming the security-scoped
-read/write grant cannot be driven from a non-interactive shell. That step remains a human check;
-the entitlement itself is present in the signed bundle and the app has already launched with it.
+`Scripts/make-app.sh` re-run and signing re-checked on 2026-11-20: identifier
+`com.hansvanderpol.CNCswift`, `Signature=adhoc`, thin arm64, no TeamIdentifier, and exactly the two
+required entitlements (`com.apple.security.app-sandbox=true`,
+`com.apple.security.files.user-selected.read-write=true`). The automatable portion of T115 is
+current.
+
+## Still owed (desktop-only) — T115
+
+The security-scoped file-picker grant cannot be driven from a non-interactive shell. T115 stays open
+until this checklist is observed on the desktop and the results are recorded below.
+
+| # | Desktop step | Expected | Result (fill on desktop) |
+|---|--------------|----------|--------------------------|
+| 1 | `open .build/CNCswift.app` and confirm the window appears. | Process launches, stays alive, no crash report. | pending |
+| 2 | Use the app's file picker to open a user-selected STL outside the app container (for example `Fixtures/stl/relief-demo-binary.stl`). | The security-scoped read grant is honored; the model loads. | pending |
+| 3 | Generate and commit a `.nc` to a user-selected output directory through the same picker. | The security-scoped write grant is honored; exactly one `.nc` is written. | pending |
+| 4 | Quit and relaunch, then reopen the same STL. | Access is re-granted on a fresh user selection; no entitlement was dropped. | pending |
+
+The entitlement is present in the signed bundle and the app has already launched with it, so no
+signing change is expected from these checks.

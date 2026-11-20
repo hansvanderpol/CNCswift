@@ -39,13 +39,16 @@ Effective settings are logged under the `ui` diagnostic category (FR-067/FR-068)
   connections sampled.
 
 ## Remaining human verification (SC-009, T113/T114)
-The following cannot be driven from a non-interactive shell and must be observed on the desktop:
+The following cannot be driven from a non-interactive shell and must be observed on the desktop.
+Record a result in the last column; T113 stays open until every row is filled in. Re-confirmed
+2026-11-20.
 
-1. With VoiceOver on, Tab through load STL → confirm units → confirm feed/spindle → confirm job
-   values → acknowledge findings → write file. Every control must be reachable and announce a
-   meaningful label/value; no pointing device.
-2. Repeat for the cutter-library workflow: open with ⇧⌘L, add a valid cutter, edit it, save, close.
-3. Repeat both with Full Keyboard Access on and off, Increase Contrast on, and Reduce Motion on.
-   Confirm focus indicators remain visible and no animation plays under Reduce Motion.
+| # | Desktop step | Expected | Result (fill on desktop) |
+|---|--------------|----------|--------------------------|
+| 1 | With VoiceOver on, Tab through load STL → confirm units → confirm feed/spindle → confirm job values → acknowledge findings → write file. | Every control reachable, meaningful label/value announced, no pointing device. | pending |
+| 2 | Repeat for the cutter-library workflow: open with ⇧⌘L, add a valid cutter, edit it, save, close. | Same reachability and announcements as row 1. | pending |
+| 3 | Repeat rows 1–2 with Full Keyboard Access on and off. | Focus indicators remain visible; all shortcuts work in both modes. | pending |
+| 4 | Repeat rows 1–2 with Increase Contrast on. | Validation errors remain distinguishable without tint alone. | pending |
+| 5 | Repeat rows 1–2 with Reduce Motion on. | No animation plays; implicit transactions are removed. | pending |
 
-Record the timed, keyboard-only result in T113 evidence when performed.
+Record the timed, keyboard-only result in `validation-evidence.md` (T113) when performed.
