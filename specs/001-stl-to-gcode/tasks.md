@@ -30,18 +30,23 @@ This is a Swift Package Manager workspace, not a single `src/` tree.
 - Fixtures: `Fixtures/stl/`, `Fixtures/gcode/`, `Fixtures/library/`, `Fixtures/materials/`
 - Scripts: `Scripts/`
 
-## Specification conflicts resolved in design artifacts
+## Specification decisions recorded in `spec.md`
 
-Do not silently rewrite `spec.md` while implementing. The clarified spec, `plan.md`, contracts, and data model are the executable source of truth. Where `spec.md` still contains a literal conflict, follow the resolution below and raise a spec refinement if behaviour changes:
+Do not rewrite `spec.md` silently while implementing. The clarified `spec.md` (including the 2026-11-20 Clarifications), `plan.md`, contracts, and data model are the executable source of truth. The table below indexes each previously ambiguous decision to its canonical `spec.md` location; it does not override the spec.
 
-1. **Commit gate vs. US1 acceptance scenario 1**: clarification Q6 and `contracts/toolpath-api.md` say `run` builds, validates, and previews without writing; a separate explicit `commit` writes after the preview is shown and findings are acknowledged. US1 acceptance scenario 1 says generation writes a file. Implementation follows Q6 and the contract; US1 tests use a test-only confirmation after a stub preview. Do not make `run` write.
-2. **Validation vs. preview findings**: validation errors block writing. The preview highlights envelope and limit findings; it does not make an invalid program committable.
-3. **SC-012 threshold vs. five reference models**: 95% of five fixtures is still five fixtures under the current reference set. Record timings for all five; a lower threshold needs an amendment to the reference set or the criterion.
-4. **Preset bands**: the four band rows are provisional engineering guidance pending cutting-experience sign-off (research D11). Keep the fixture marked provisional until T111 records approval.
-5. **FR-041 effective radius**: resolved in `plan.md` task-shaping note 8 and `data-model.md`. `CNCGeometry` owns `effectiveRadius(cutter, stepover)`: flat = `cuttingDiameter / 2`; ball nose = `sqrt(2Rs - s²)` with `R = ballDiameter / 2` and `s = min(stepover, R)`; V-bit = `tipDiameter / 2 + s * tan(includedAngle / 2)`. T050 and T065 assert this formula and report both radii in millimetres.
-6. **FR-029 header fields**: treat `contracts/gcode-output.md` plus FR-081 as the canonical header field list, including the rapid-rate line and the material rows.
-7. **ASCII-only output**: `contracts/gcode-output.md` defines deterministic 7-bit ASCII content and filenames. U+2026 is forbidden; truncation uses the three ASCII characters `...`.
-8. **Laser tokens**: `M4` and `$32` are unsupported dynamic-power tokens in `contracts/machine-profile.md`; T012, T026, T044, and T047 enforce the rejection.
+| # | Decision | Canonical location in `spec.md` |
+|---|----------|---------------------------------|
+| 1 | Commit gate: `run` builds, validates and previews without writing; an explicit `commit` writes after the preview is shown and findings are acknowledged | Clarifications Q6 (2026-11-17), Q2 (2026-11-18), FR-083; US1 narrative and acceptance scenario 1 |
+| 2 | Validation errors block writing; preview findings do not make an invalid program committable | Clarifications 2026-11-20 (4); FR-026, FR-064 |
+| 3 | SC-012's 95% over five fixtures means all five | Clarifications 2026-11-20 (3); SC-012 |
+| 4 | Preset bands are provisional, not certified cutting data | Clarifications 2026-11-20 (6); FR-077, Assumptions |
+| 5 | FR-041 effective-radius formula | Clarifications 2026-11-20 (2); FR-041; `plan.md` task-shaping note 8 |
+| 6 | FR-081 is the canonical material header field list | FR-081, FR-029; `contracts/gcode-output.md` |
+| 7 | ASCII-only emission and the U+2026 ban | Clarifications 2026-11-20 (1); FR-082 |
+| 8 | Laser/dynamic-power tokens | Clarifications 2026-11-20 (5); FR-031 |
+| 9 | Insufficient cutter margin fails loudly (T120) | FR-011, FR-025, FR-038 |
+
+`CNCGeometry.effectiveRadius(cutter, stepover)` remains the implementation owner of row 5: flat = `cuttingDiameter / 2`; ball nose = `sqrt(2Rs - s²)` with `R = ballDiameter / 2` and `s = min(stepover, R)`; V-bit = `tipDiameter / 2 + s * tan(includedAngle / 2)`. T050 and T065 assert the formula and report both radii in millimetres.
 
 ---
 
@@ -204,7 +209,7 @@ Do not silently rewrite `spec.md` while implementing. The clarified spec, `plan.
 - [X] T092 [P] [US3] Progress and cancellation tests asserting a cancelled simulation is reported as cancelled, not failed (FR-066, FR-069) — `Packages/CNCSimulation/Tests/CancellationTests.swift`
 - [X] T093 [P] [US3] Identity test proving simulation consumes the exact `ParsedProgram` returned by validation, not an emitter-side toolpath (FR-065) — `Packages/CNCSimulation/Tests/ProgramIdentityTests.swift`
 - [X] T094 [P] [US3] Commit-gate test proving no file exists after `run`, no file after a blocked or cancelled simulation, and a file only after `commit` with preview shown and findings acknowledged (FR-064, FR-066, FR-069, SC-011, clarification Q6) — `Packages/CNCPipeline/Tests/CommitTests.swift`
-- [X] T095 [P] [US3] Render-time test recording preview latency for all five reference STL fixtures and asserting 5/5 fixtures render within five seconds, because 95% of the five-fixture reference set requires five passes (SC-012, clarification Q5) — `Packages/CNCSimulation/Tests/PreviewPerformanceTests.swift`
+- [X] T095 [P] [US3] Render-time test recording preview latency for all five reference STL fixtures and asserting 5/5 fixtures render within five seconds, because SC-012 requires all five fixtures to pass (SC-012, clarifications 2026-11-20 (3) and Q5) — `Packages/CNCSimulation/Tests/PreviewPerformanceTests.swift`
 
 ### Implementation for User Story 3
 
@@ -376,6 +381,7 @@ Every requirement is assigned to at least one task.
 | FR-079, FR-080 | T017, T031, T054, T071 |
 | FR-081 | T040, T041, T054, T057 |
 | FR-082 | T043, T047, T057 |
+| FR-083 | T052, T068, T094, T103, T121, T122 |
 | SC-001 | T112, T114 |
 | SC-002, SC-003 | T040, T047, T074, T114, T119, T120, T121, T122, T124 |
 | SC-004 | T014, T015, T016, T049, T050, T114, T120 |
@@ -395,7 +401,8 @@ Every requirement is assigned to at least one task.
 
 - `[P]` means different files and no dependency within the same wave. Do not mark two tasks `[P]` if they edit the same file.
 - Every task names its file so no task reads "make it work".
-- The commit gate follows clarification Q6 and `contracts/toolpath-api.md`: `run` prepares the program and preview; `commit` writes after explicit confirmation. Do not implement US1 acceptance scenario 1 literally until `spec.md` is reconciled.
+- The commit gate is normative in `spec.md` (FR-083, clarifications Q6 and 2026-11-18 Q2) and `contracts/toolpath-api.md`: `run` prepares the program and preview; `commit` writes after explicit confirmation.
+- A14 closed (2026-11-20): ambiguity resolutions live in `spec.md` Clarifications; the decision index above is a pointer, not an override.
 - The rapid ceiling is a ratified controller-setting requirement in constitution v4.1.0 and retained through v4.3.0; T012, T041, T049, T058, and T071 implement it.
 - SPM/CLT bundles are ad-hoc signed with `/usr/bin/codesign --sign -` under constitution v4.3.0; the sandbox entitlement is mandatory, and T006/T115 verify signing and entitlement configuration without dropping it.
 - The five STL fixtures are the reference model set for SC-003 and SC-012; adding or removing one requires an amendment.

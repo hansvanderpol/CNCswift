@@ -25,6 +25,17 @@
 - Q: How should the 80 mm Z limit of the 460 x 460 x 80 mm envelope be measured relative to the work origin at the stock's top surface? → A: The 80 mm is the maximum stock thickness below the top surface (Z from 0 down to -80 mm); the mandatory clearance-height rapids above Z0 are exempt from this downward envelope limit.
 - Q: After confirming the cutting settings and running generation, is the `.nc` file written at the end of generation or only after a separate explicit commit following the 3D preview? → A: Generation writes no file; the single `.nc` file is written only on an explicit commit after the user has seen the preview and acknowledged any findings.
 
+### Session 2026-11-20 (spec refinement for A14)
+
+Decisions previously recorded only in `plan.md` and `tasks.md` are canonical here. Design artifacts index these entries; they do not override them.
+
+- Q: May an emitted `.nc` line contain non-ASCII characters, and what is the exact line limit? → A: Every emitted line, including header and comment lines, is at most 80 characters and strictly 7-bit ASCII. Header strings are sanitized to ASCII before the length check, U+2026 is forbidden, and truncation uses the three ASCII characters `...`. Output filenames follow the ASCII-only mapping documented in `contracts/gcode-output.md`.
+- Q: How is the cutter's "effective radius at the configured finishing stepover" in FR-041 computed? → A: `CNCGeometry.effectiveRadius(cutter, stepover)`: flat = `cuttingDiameter / 2`; ball nose = `sqrt(2Rs - s²)` with `R = ballDiameter / 2` and `s = min(stepover, R)`; V-bit = `tipDiameter / 2 + s * tan(includedAngle / 2)`. FR-041 reports both this radius and the smallest concave radius in millimetres.
+- Q: How is SC-012's 95% applied to the five-fixture reference set? → A: 95% of five fixtures is five fixtures, so all five reference models must render within five seconds of validation, with timings recorded for each. Restating SC-012 as "all five fixtures" is an equivalent clarification, not a threshold change.
+- Q: Does a finding shown in the preview make an invalid program committable? → A: No. Validation errors block writing under FR-026; the preview only highlights envelope and limit findings before the file is written, under FR-064.
+- Q: Which tokens count as laser-specific or dynamic-power output under FR-031? → A: `M4`, `$32`, `S` used as a power word, and dynamic-power comments are unsupported and MUST be rejected by validation; the machine profile lists them as unsupported.
+- Q: Are the four built-in preset bands certified cutting data? → A: No. They are provisional engineering guidance recorded in `Fixtures/materials/README.md`; generation remains gated on per-job confirmation, and treating them as certified requires a physical review sign-off. T111 recorded on 2026-11-20 that no physical review was performed, so the bands stay provisional.
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - Generate a validated G-code file from an STL (Priority: P1)
@@ -140,7 +151,7 @@ Before committing a job, the maker looks at the simulation panel and sees the ma
 - **FR-015**: Toolpath and formatting stages MUST NOT hardcode dialect tokens, limits, or block contents; every dialect token and limit MUST come from the machine profile.
 - **FR-016**: A different machine MUST be a new profile, never a new code path.
 - **FR-017**: System MUST emit only commands implemented by the profile's dialect (GRBL 1.1), and MUST NOT emit `G43` tool-length offsets, `M6` tool changes, vendor macros, custom M-codes, or controller extensions.
-- **FR-018**: System MUST write exactly one plain-text output file per generation, with the `.nc` extension; `.gcode`, `.tap`, and `.ngc` MUST NOT be produced.
+- **FR-018**: System MUST write exactly one plain-text output file per committed job, with the `.nc` extension; `.gcode`, `.tap`, and `.ngc` MUST NOT be produced. The write occurs only under FR-083.
 - **FR-019**: System MUST open every generated program with the profile's start block, in exactly this order and with no line omitted, before any cutting move: `G21`, `G90`, `G94`, `G00 Z10.0`, and `M3` carrying the `S` word.
 - **FR-020**: System MUST close every generated program with the profile's stop block, in exactly this order and with no line omitted, after the last cutting move: `G90`, `G00 Z15.0`, `M5`, `G00 X0 Y0`, `M30`.
 - **FR-021**: System MUST make `M30` the final line of every generated file, and MUST stop the spindle with `M5` before returning to the origin.
@@ -153,8 +164,9 @@ Before committing a job, the maker looks at the simulation panel and sees the ma
 - **FR-028**: System MUST produce deterministic output: the same model, confirmed settings, and profile version MUST yield byte-identical files apart from the documented header fields.
 - **FR-029**: System MUST record in the file header the cutter identifier, the cutter type, the attribute values actually used, the machine profile version, the job settings, the declared units and origin, any confirmed scale, and the material fields defined by FR-081.
 - **FR-030**: System MUST NOT stream to, drive, or control machine hardware; writing the file is the only output.
-- **FR-031**: System MUST NOT emit laser-specific output, including power modulation, laser-mode enable settings, and dynamic-power moves.
-- **FR-082**: System MUST emit every G-code line, including header and comment lines, with at most 80 characters, and MUST reject any program containing a longer line rather than emitting it.
+- **FR-031**: System MUST NOT emit laser-specific output, including power modulation, laser-mode enable settings, and dynamic-power moves. The tokens `M4`, `$32`, `S` used as a power word, and dynamic-power comments are unsupported and MUST be rejected by validation (2026-11-20 Clarifications).
+- **FR-082**: System MUST emit every G-code line, including header and comment lines, with at most 80 characters and strictly 7-bit ASCII, sanitizing header strings to ASCII before the length check; U+2026 is forbidden and over-long values truncate with the three ASCII characters `...`. System MUST reject any program containing a longer or non-ASCII line rather than emitting it.
+- **FR-083**: System MUST write the `.nc` file only through an explicit `commit` after the user has seen the 3D preview and acknowledged any findings; generation (`run`) MUST NOT write any file, and a blocked or cancelled preview MUST NOT be committable.
 
 #### Toolpath generation
 
@@ -167,7 +179,7 @@ Before committing a job, the maker looks at the simulation panel and sees the ma
 - **FR-038**: System MUST restrict carving to the model's footprint plus at most the cutter's radius of margin, and MUST NOT sweep the whole blank. When the stock cannot provide that margin, generation MUST fail loudly rather than shrink the swept region.
 - **FR-039**: System MUST perform rapid repositioning at the profile's clearance height and MUST NOT rapid through material.
 - **FR-040**: System MUST require explicit per-job confirmation of both the cutting feed rate and spindle speed resolved under FR-079 before generation, and MUST NOT substitute an unconfirmed value at generation time.
-- **FR-041**: System MUST report, before generation, any model feature smaller than the selected cutter can carve. A feature is "too small" when its smallest concave radius is below the cutter's effective radius at the configured finishing stepover. The report MUST state both radii in millimetres and MUST block generation until the model, cutter, or stepover changes.
+- **FR-041**: System MUST report, before generation, any model feature smaller than the selected cutter can carve. A feature is "too small" when its smallest concave radius is below the cutter's effective radius at the configured finishing stepover. The effective radius is computed by the formula in the 2026-11-20 Clarifications and `plan.md` task-shaping note 8. The report MUST state both radii in millimetres and MUST block generation until the model, cutter, or stepover changes.
 
 #### Cutter library
 
@@ -243,7 +255,7 @@ Before committing a job, the maker looks at the simulation panel and sees the ma
 ### Measurable Outcomes
 
 - **SC-001**: A user with an existing cutter record can go from choosing an STL to a written `.nc` file for a 200,000-triangle model in under 5 minutes on the reference machine (macOS 27.2.1, arm64 Apple silicon), with no external documentation.
-- **SC-002**: 100% of generated files pass an independent check of GRBL 1.1 syntax, the 460 x 460 x 80 mm envelope, the 800 mm/min feed ceiling, the recorded controller rapid-rate setting, and the 5,000-8,000 RPM spindle range on the first attempt.
+- **SC-002**: 100% of generated files pass an independent check of GRBL 1.1 syntax, the 460 x 460 x 80 mm envelope, the 800 mm/min feed ceiling, the header's documented controller rapid-rate confirmation (not live controller state, which the app MUST NOT read), and the 5,000-8,000 RPM spindle range on the first attempt.
 - **SC-003**: Zero generated files contain a reordered, truncated, or missing start or stop block, or a final line other than `M30`, across the full reference model set.
 - **SC-004**: 100% of invalid inputs — corrupt, truncated, empty, non-manifold, oversize, under-specified cutter, or out-of-range value — are rejected with a message naming the problem and the fix, and zero are silently repaired, clamped, scaled, or defaulted.
 - **SC-005**: Generating the same job twice produces byte-identical files apart from documented header fields in 100% of runs.
@@ -252,8 +264,8 @@ Before committing a job, the maker looks at the simulation panel and sees the ma
 - **SC-008**: 100% of library records survive an upgrade across two consecutive schema versions in fixture tests, and zero records are lost or silently altered.
 - **SC-009**: Both primary workflows — generating G-code and maintaining cutters — are completed with the keyboard alone by a tester using no pointing device.
 - **SC-010**: A full session, from launch through generation, opens zero outbound network connections as observed by a network monitor.
-- **SC-011**: 100% of cancelled or failed generations leave no `.nc` file and no partial artifact on disk.
-- **SC-012**: For 95% of reference models, the 3D preview renders within 5 seconds of the program being validated, and every limit violation present is highlighted.
+- **SC-011**: 100% of cancelled or failed generations and commits leave no `.nc` file and no partial artifact on disk.
+- **SC-012**: For all five reference models (equivalently 95% of the fixed five-fixture reference set), the 3D preview renders within 5 seconds of the program being validated, and every limit violation present is highlighted.
 - **SC-013**: In 100% of generated files, the effective feed rate and spindle speed lie inside the intersection of the material's recommended band and the profile's limits, the header records the material, its bands, and both effective values, and zero files are written from an empty intersection.
 
 ## Assumptions

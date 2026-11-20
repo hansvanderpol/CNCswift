@@ -2,7 +2,7 @@
 
 **Branch**: `001-stl-to-gcode` | **Date**: 2026-11-17 | **Spec**: [spec.md](./spec.md)
 
-**Input**: Feature specification from `/specs/001-stl-to-gcode/spec.md` (82 functional requirements, 13 success criteria, six clarification answers recorded on 2026-11-17), reconciled with constitution v4.3.0.
+**Input**: Feature specification from `/specs/001-stl-to-gcode/spec.md` (83 functional requirements, 13 success criteria, seven clarification answers recorded on 2026-11-17 and two on 2026-11-18, plus the 2026-11-20 spec refinement), reconciled with constitution v4.3.0.
 
 ## Summary
 
@@ -25,7 +25,8 @@ This revision also resolves three CRITICAL findings from `/speckit.analyze` in t
 
 The first VS-1 fix clipped the swept footprint to the stock and envelope. That kept emitted
 programs committable but silently accepted jobs with no room for the cutter, violating the
-rejection rules. The ratified behaviour is:
+rejection rules. The ratified behaviour, recorded in `spec.md` FR-011/FR-025/FR-038 and the
+2026-11-20 Clarifications, is:
 
 - place the model one cutter radius inside the stock's front-left top corner;
 - expand the silhouette by exactly one radius to form the swept centre region;
@@ -51,7 +52,7 @@ program is reproducible production output.
 
 **Project Type**: native macOS desktop application over a Swift package workspace.
 
-**Performance Goals**: decode plus generation for a 200,000-triangle model completes in under 5 minutes; the 3D preview renders within 5 seconds of validation for 95% of the reference set, which means all five fixtures (5/5) must meet the threshold and timings are recorded for each.
+**Performance Goals**: decode plus generation for a 200,000-triangle model completes in under 5 minutes; the 3D preview renders within 5 seconds of validation for all five fixtures (equivalently 95% of the reference set, so 5/5 must pass) and timings are recorded for each.
 
 **Constraints**: GRBL 1.1 dialect only; 460 x 460 x 80 mm envelope; 800 mm/min feed ceiling; 800 mm/min rapid rate achieved through controller settings rather than program text; 5,000-8,000 RPM inclusive spindle range; `.nc` output only; **80-character maximum per G-code line** (GRBL's line buffer, error:11); byte-deterministic output apart from documented header fields; fully offline and sandboxed.
 
@@ -233,6 +234,7 @@ Re-evaluated after Phase 1 design and again against constitution v4.3.0. All sev
 - **80-character line limit**: emitted from one formatter and checked by the validator, so `CNCGCode` and `CNCValidation` agree on the ceiling without sharing code.
 - **Determinism**: `generatedAt` is an injected `Date`, so the determinism test uses two fixed clocks and no real time (Principle III, FR-028).
 - **Presentation separation**: `MainScreenUI` and `CutterLibraryModalUI` still never import each other; the library-to-generation contract test runs from the neutral `CNCPipeline` test target, which may import both (FR-050, FR-060, SC-007).
+- **A14 closed (2026-11-20)**: the ambiguity resolutions previously held only in this plan and in `tasks.md` are now canonical in `spec.md` Clarifications, Session 2026-11-20 — ASCII-only emission (FR-082), FR-041 effective-radius formula, SC-012 five-fixture threshold, validation-versus-preview findings, laser tokens (FR-031), and preset-provisional status. `plan.md` and `tasks.md` are indexes to those entries, not the resolver, satisfying the constitution's Development Workflow ambiguity gate.
 
 ## Task-shaping notes for `/speckit.tasks`
 
@@ -245,7 +247,7 @@ The task list is regenerated after this plan. These points must appear in it, be
 5. **Injected clock and file system.** Determinism and writer tests take a fixed `Date` and a fake file system; no test reads the system clock or Application Support (Principle III, FR-028).
 6. **UI placement of the rapid-rate confirmation.** It belongs in the material panel's job section plus the pre-generation checklist, not as a fourth panel, because FR-055 fixes the count at three.
 7. **Identifier immutability test** for cutters and materials across edit, save, and migration (FR-042, FR-050, FR-052).
-8. **Measurable feature rule.** FR-041 defines "too small" numerically: smallest concave radius versus the cutter's effective radius at the finishing stepover, both reported in millimetres, so T050 asserts a number, not an adjective. `CNCGeometry` owns `effectiveRadius(cutter, stepover)`: flat = `cuttingDiameter / 2`; ball nose = `sqrt(2Rs - s²)` with `R = ballDiameter / 2` and `s = min(stepover, R)`; V-bit = `tipDiameter / 2 + s * tan(includedAngle / 2)`.
+8. **Measurable feature rule.** FR-041 defines "too small" numerically: smallest concave radius versus the cutter's effective radius at the finishing stepover, both reported in millimetres, so T050 asserts a number, not an adjective. The formula is recorded in `spec.md` Clarifications (2026-11-20). `CNCGeometry` owns `effectiveRadius(cutter, stepover)`: flat = `cuttingDiameter / 2`; ball nose = `sqrt(2Rs - s²)` with `R = ballDiameter / 2` and `s = min(stepover, R)`; V-bit = `tipDiameter / 2 + s * tan(includedAngle / 2)`.
 9. **Commit gate.** `run` writes no file; it returns `.ready` with the validated program and preview. `commit` writes exactly one atomically replaced `.nc` file only after `WriteConfirmation` proves the preview was shown and findings were acknowledged. No task may make the renderer write to disk.
 10. **ASCII-only output.** All emitted text and the output filename are 7-bit ASCII. Header strings are sanitized to ASCII before the 80-character check; the ellipsis character is forbidden, and truncation uses the three ASCII characters `...`.
 11. **Sandbox and signing.** The first bundle build must verify the ad-hoc signature and the sandbox entitlement. A launch failure is fixed inside the signed, sandboxed bundle; dropping the sandbox entitlement is not an allowed fallback.
