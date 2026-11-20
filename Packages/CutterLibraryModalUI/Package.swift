@@ -11,6 +11,7 @@ let package = Package(
     dependencies: [
         .package(path: "../CNCCutters"),
         .package(path: "../CNCCuttersStore"),
+        .package(path: "../CNCStorage"),
     ],
     targets: [
         .target(
@@ -28,6 +29,7 @@ let package = Package(
                 "CutterLibraryModalUI",
                 .product(name: "CNCCutters", package: "CNCCutters"),
                 .product(name: "CNCCuttersStore", package: "CNCCuttersStore"),
+                .product(name: "CNCStorage", package: "CNCStorage"),
             ],
             path: "Tests",
             swiftSettings: [.treatAllWarnings(as: .error)]

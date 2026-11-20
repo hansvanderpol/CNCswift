@@ -169,11 +169,11 @@ Do not silently rewrite `spec.md` while implementing. The clarified spec, `plan.
 
 ### Tests for User Story 2 (write first; they must fail)
 
-- [ ] T076 [P] [US2] Migration tests across two consecutive versions with v1 and v2 fixtures, including abort without loss for an unmigratable record (FR-052, SC-008) — `Packages/CNCCuttersStore/Tests/MigrationTests.swift`
-- [ ] T077 [P] [US2] Modal view-model tests for per-type forms, entry rejection at the field, and the empty-library path to a first valid cutter (FR-044, FR-045, FR-046, FR-048, SC-006) — `Packages/CutterLibraryModalUI/Tests/CutterEditorModelTests.swift`
-- [ ] T078 [P] [US2] Timed first-valid-cutter scenario test proving a user can go from an empty library to a stored valid cutter without help (SC-006) — `Packages/CutterLibraryModalUI/Tests/EmptyLibraryTests.swift`
-- [ ] T079 [P] [US2] Cutter-deletion contract test from the neutral pipeline target: the main screen clears its selection and generation is blocked until a stored cutter is chosen (FR-060, SC-007) — `Packages/CNCPipeline/Tests/DeletionContractTests.swift`
-- [ ] T080 [P] [US2] Module-independence test proving the modal entry point and view model run without the main screen module loaded (FR-057) — `Packages/CutterLibraryModalUI/Tests/ModuleIndependenceTests.swift`
+- [X] T076 [P] [US2] Migration tests across two consecutive versions with v1 and v2 fixtures, including abort without loss for an unmigratable record (FR-052, SC-008) — `Packages/CNCCuttersStore/Tests/MigrationTests.swift`
+- [X] T077 [P] [US2] Modal view-model tests for per-type forms, entry rejection at the field, and the empty-library path to a first valid cutter (FR-044, FR-045, FR-046, FR-048, SC-006) — `Packages/CutterLibraryModalUI/Tests/CutterEditorModelTests.swift`
+- [X] T078 [P] [US2] Timed first-valid-cutter scenario test proving a user can go from an empty library to a stored valid cutter without help (SC-006) — `Packages/CutterLibraryModalUI/Tests/EmptyLibraryTests.swift`
+- [X] T079 [P] [US2] Cutter-deletion contract test from the neutral pipeline target: the main screen clears its selection and generation is blocked until a stored cutter is chosen (FR-060, SC-007) — `Packages/CNCPipeline/Tests/DeletionContractTests.swift`
+- [X] T080 [P] [US2] Module-independence test proving the modal entry point and view model run without the main screen module loaded (FR-057) — `Packages/CutterLibraryModalUI/Tests/ModuleIndependenceTests.swift`
 
 ### Implementation for User Story 2
 
