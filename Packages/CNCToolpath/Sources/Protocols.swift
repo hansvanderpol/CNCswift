@@ -3,6 +3,7 @@ import CNCDiagnostics
 import CNCGeometry
 import CNCMachineProfile
 import CNCMaterials
+import Foundation
 
 /// The blank the model is carved from.
 ///
@@ -175,6 +176,50 @@ public enum PlanningError: Error, Equatable, Sendable {
 
     /// The selected cutter cannot reach the bottom of the stock (FR-049).
     case cutterTooShort(requiredCuttingLength: Double)
+
+    /// A stock dimension is not positive or exceeds the machine envelope (FR-010).
+    case invalidStock(String)
+
+    /// An actionable message for the UI, naming measurements in millimetres (FR-067).
+    public var userMessage: String {
+        switch self {
+        case .modelOutsideStock:
+            return
+                "The model does not fit inside the stock. Reduce the model scale or choose a larger blank."
+        case .featureTooSmall(let smallest, let effective):
+            return
+                "Smallest concave feature \(format(smallest)) mm is below the cutter's effective radius \(format(effective)) mm. Choose a smaller cutter."
+        case .depthExceedsCuttingLength:
+            return
+                "Maximum depth per pass exceeds the cutter's cutting length. Lower the depth per pass."
+        case .invalidStepover:
+            return "Stepover must be positive and smaller than the cutter's cutting diameter."
+        case .invalidAllowance:
+            return "Finishing allowance must be at least zero and smaller than the stock height."
+        case .envelopeExceeded:
+            return "The stock exceeds the machine envelope of 460 x 460 x 80 mm."
+        case .unconfirmedEffectiveValues:
+            return "Confirm the effective feed and spindle values before generating."
+        case .rapidSetupUnconfirmed:
+            return
+                "Confirm that the controller rapid-rate settings ($110-$112) are applied before generating."
+        case .unconfirmedModel:
+            return "Confirm the model's units and orientation before generating."
+        case .unconfirmedSettings:
+            return "Confirm the suggested job settings before generating."
+        case .missingCutterAttribute(let name):
+            return "The selected cutter is missing \(name). Edit the cutter in the library."
+        case .cutterTooShort(let required):
+            return
+                "The selected cutter cannot reach the stock bottom. Select a cutter with a cutting length of at least \(format(required)) mm."
+        case .invalidStock(let dimension):
+            return "Stock \(dimension) must be positive and inside the machine envelope."
+        }
+    }
+
+    private func format(_ value: Double) -> String {
+        String(format: "%.3f", locale: Locale(identifier: "en_US_POSIX"), value)
+    }
 }
 
 /// The planning stage boundary (FR-032 – FR-041).

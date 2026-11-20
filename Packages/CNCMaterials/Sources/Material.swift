@@ -5,7 +5,7 @@ public enum MaterialOrigin: String, Sendable, Codable, Equatable {
     case user
 }
 
-public struct MaterialBand: Equatable, Sendable {
+public struct MaterialBand: Codable, Equatable, Sendable {
     public let lowerBound: Double
     public let upperBound: Double
 
@@ -32,7 +32,7 @@ public struct MaterialBand: Equatable, Sendable {
     }
 }
 
-public struct Material: Equatable, Sendable {
+public struct Material: Codable, Equatable, Sendable {
     public let id: String
     public let name: String
     public let feedBand: MaterialBand

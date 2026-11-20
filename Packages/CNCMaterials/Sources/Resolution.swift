@@ -65,6 +65,19 @@ public struct EffectiveCuttingValues: Equatable, Sendable {
         self.confirmed = confirmed
     }
 
+    /// Returns the same values with the user's per-job confirmation recorded (FR-079).
+    ///
+    /// Resolution always produces an unconfirmed value; only an explicit UI confirmation may call
+    /// this. The returned value is a copy, so a prefilled value is never mutated in place.
+    public func confirming() -> EffectiveCuttingValues {
+        EffectiveCuttingValues(
+            feed: feed,
+            spindle: spindle,
+            source: source,
+            confirmed: true
+        )
+    }
+
     public static func resolve(
         material: Material,
         cutter: Cutter,
