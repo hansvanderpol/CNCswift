@@ -42,3 +42,19 @@ import Testing
     #expect(sLines == ["M3 S8000"], "S words appear only on the spindle start command")
     #expect(!programLines.contains { $0.split(separator: " ").contains("M4") })
 }
+
+@Test func noEmittedLineCanBeClassifiedAsLaserPower() throws {
+    let rendered = try EmitterFixture.render(
+        generatedAt: EmitterFixture.date("2026-11-17T09:12:44Z")
+    )
+    let programLines = EmitterFixture.emittedLines(of: rendered.text).filter { !$0.hasPrefix(";") }
+    let sBearing = programLines.filter { $0.uppercased().contains("S") }
+
+    // Under the 2026-11-20 clarification an S word is power only with M4, $32, or a
+    // dynamic-power comment. The emitter produces none of those, so every S word is spindle.
+    #expect(sBearing.count == 1)
+    #expect(sBearing.first?.hasPrefix("M3 S") == true)
+    #expect(!sBearing.contains { $0.uppercased().contains("M4") })
+    #expect(!rendered.text.contains("$32"))
+    #expect(!rendered.text.localizedCaseInsensitiveContains("dynamic power"))
+}

@@ -66,3 +66,24 @@ until this checklist is observed on the desktop and the results are recorded bel
 
 The entitlement is present in the signed bundle and the app has already launched with it, so no
 signing change is expected from these checks.
+
+## Re-verification (2026-11-21)
+
+`Scripts/make-app.sh` re-run, then `codesign -dvv .build/CNCswift.app` and
+`codesign -d --entitlements :- .build/CNCswift.app`:
+
+| Check | Observed | Result |
+|---|---|---|
+| Identifier | `com.hansvanderpol.CNCswift` | PASS |
+| Signature | `adhoc` | PASS |
+| Format | app bundle, Mach-O thin arm64 | PASS |
+| TeamIdentifier | not set | PASS (no Developer ID) |
+| Entitlements | exactly `com.apple.security.app-sandbox=true` and `com.apple.security.files.user-selected.read-write=true` | PASS |
+
+`open .build/CNCswift.app` started PID 29210, alive after three seconds, and `lsof -nP -i -a -p`
+returned no rows; the process was terminated after the observation. No entitlement was dropped.
+
+The four security-scoped picker steps above remain pending. An `osascript` System Events probe on
+2026-11-21 returned `osascript is not allowed assistive access (-1728)`, so the file-picker grant
+cannot be exercised from this non-interactive shell. T115 stays open until those steps are
+observed on the desktop.

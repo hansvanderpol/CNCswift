@@ -210,6 +210,35 @@ private func program(_ text: String, moves: [ParsedMove] = []) -> ParsedProgram 
     )
 }
 
+@Test func sWordDetectionRuleRejectsLaserPowerButAcceptsSpindleSpeed() {
+    // 2026-11-20 clarification (FR-031): S is a power word only alongside an already-rejected
+    // laser token or dynamic-power comment, never on its own.
+    let laserLines = [
+        "M4 S6000",
+        "$32=1",
+        "M4 S6000 ; dynamic power",
+    ]
+    for line in laserLines {
+        let findings = ValidationRules().evaluate(program("G21\n\(line)\nM30"), profile: profile)
+        #expect(
+            findings.contains { $0.severity == .error },
+            "expected rejection for laser/dynamic-power line \(line)"
+        )
+    }
+
+    let spindle = ValidationRules().evaluate(program("M3 S6000"), profile: profile)
+    #expect(
+        !spindle.contains {
+            $0.ruleIdentifier.localizedCaseInsensitiveContains("power")
+                || $0.ruleIdentifier.localizedCaseInsensitiveContains("laser")
+                || $0.message.localizedCaseInsensitiveContains("power")
+                || $0.message.localizedCaseInsensitiveContains("laser")
+        },
+        "a standalone spindle S word must not be rejected as laser power"
+    )
+    #expect(!spindle.contains { $0.ruleIdentifier == "spindle-range" })
+}
+
 @Test func forbiddenWordsAndSettingsAreRejected() {
     let tokens = ["$", "M4", "$32", "G93", "G43.1", "G49"]
     for token in tokens {

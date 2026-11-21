@@ -104,6 +104,20 @@ untouched as a read-only gate.
 
 Detail and result columns are in `accessibility-audit.md`.
 
+## Re-verification (2026-11-21)
+
+`Scripts/ci.sh` re-run: exit 0 — format lint, DocC gate (99 files), offline audit, workspace
+build, all 16 package suites green, golden fixture guard clean. This run includes the two new
+T129 checks: `noEmittedLineCanBeClassifiedAsLaserPower` (CNCGCode, 33 tests) and
+`sWordDetectionRuleRejectsLaserPowerButAcceptsSpindleSpeed` (CNCValidation, 13 tests). The
+2026-11-20 clarification now canonical in `spec.md` distinguishes laser `S` from spindle `S`;
+the automated FR-031 evidence for SC-002 is current.
+
+SC-006 (`EmptyLibraryTests`) and SC-009 (UI accessibility suites) automated evidence remains
+current. The human steps M1–M4 above are still owed: an `osascript` GUI probe on 2026-11-21
+returned `osascript is not allowed assistive access (-1728)`, so VoiceOver, Full Keyboard Access,
+and the timed desktop walkthrough cannot be driven from this non-interactive shell.
+
 ## Re-run command
 
 ```bash

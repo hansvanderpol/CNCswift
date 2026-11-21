@@ -291,6 +291,16 @@ Do not rewrite `spec.md` silently while implementing. The clarified `spec.md` (i
 
 ---
 
+## Phase 9: Follow-up — A1 S-as-power detection rule (analysis remediation)
+
+**Purpose**: Close the HIGH `/speckit.analyze` finding A1. FR-031 (`spec.md:L167`) requires validation to reject `S` "used as a power word", but `S` is also the legitimate spindle-speed word under FR-022 (`spec.md:L158`); with no rule distinguishing them, the MUST-reject acceptance criterion is untestable. Apply the accepted recommendation: define the detection rule canonically in `spec.md`, then align the output-guard and validation-rule tests so the rule is executable.
+
+- [X] T129 Record the S-as-power detection rule canonically and align T044/T047: add an entry to the 2026-11-20 Clarifications in `spec.md` stating that an `S` word is a laser/dynamic-power word only when it appears on an `M4` line, in a `$32` setting, or in a dynamic-power comment (all already unsupported and rejected under FR-031), while a standalone `S` on an `M3` or cutting line is the spindle-speed word governed by FR-022/FR-079 and MUST NOT be rejected as power; update FR-031 to reference that clarification; extend `Packages/CNCGCode/Tests/OutputGuardTests.swift` (T044) and `Packages/CNCValidation/Tests/RuleTests.swift` (T047) with cases asserting both that `M4`/`$32`/dynamic-power `S` remains rejected and that a valid spindle `S` word is accepted, then run `Scripts/ci.sh` (constitution Principle VI, FR-022, FR-031, SC-002, A1) — `specs/001-stl-to-gcode/spec.md`, `Packages/CNCGCode/Tests/OutputGuardTests.swift`, `Packages/CNCValidation/Tests/RuleTests.swift`
+
+**Checkpoint**: FR-031 has an explicit, testable S-as-power detection rule in `spec.md`; T044 and T047 prove laser `S` is rejected while spindle `S` passes; `Scripts/ci.sh` is green.
+
+---
+
 ## Dependencies & Execution Order
 
 ### Phase dependencies
@@ -302,6 +312,7 @@ Do not rewrite `spec.md` silently while implementing. The clarified `spec.md` (i
 - **US3 (Phase 5)**: depends on Foundational; T102 and T103 integrate with the US1 pipeline, so schedule them after T067 and T068. T094 is the write-gate test and must precede T103.
 - **Polish (Phase 6)**: depends on the stories being hardened; T114 and T117 are the final gates.
 - **CT1 follow-up (Phase 8)**: depends on the Phase 6 final gates and the `/speckit.analyze` findings; order is T125 (record FR-084) → T126 (failing test) → T127 (redacting implementation) → T128 (coverage map and gates).
+- **A1 follow-up (Phase 9)**: depends on the Phase 8 gates; T129 records the S-as-power detection rule in `spec.md` before aligning T044 and T047, so the tests assert the canonical rule rather than an implementation guess.
 
 ### User story dependencies
 
@@ -386,7 +397,7 @@ Every requirement is assigned to at least one task.
 | FR-019, FR-020, FR-021 | T040, T047, T057 |
 | FR-022, FR-023, FR-024, FR-025 | T012, T017, T041, T043, T047, T049, T058, T071, T119, T120, T121, T122 |
 | FR-026, FR-027, FR-028, FR-029 | T040, T042, T045, T046, T047, T052, T057, T059, T060, T068, T074, T121, T122, T123, T124 |
-| FR-030, FR-031 | T012, T026, T044, T047, T108 |
+| FR-030, FR-031 | T012, T026, T044, T047, T108, T129 |
 | FR-032, FR-033, FR-034, FR-035, FR-036 | T048, T062, T063, T064 |
 | FR-037, FR-038, FR-039, FR-041 | T013, T027, T048, T049, T050, T056, T064, T065, T119, T120, T124 |
 | FR-040 | T017, T048, T055, T056, T071, T073 |
@@ -436,3 +447,4 @@ Every requirement is assigned to at least one task.
 - Commit after each logical group, keep each pull request small, and run `Scripts/ci.sh` before calling work done.
 - C1 and C2 from `/speckit.analyze`: T120 makes insufficient cutter margin fail loudly (constitution Principle VI). T121–T124 apply the accepted C1 fix — a pipeline-level golden test and reviewed fixture generated from the unchanged `relief-demo-binary.stl`, an explicit read-only CI/update-script split, and a recorded production-output review. T121 follows T120 so the fixture reflects final placement semantics.
 - CT1 from `/speckit.analyze` is closed by T125–T128 (constitution Principle V): FR-084 is canonical in `spec.md`, the plan gate names it, and `DiagnosticLogger` redacts sensitive payloads instead of logging the whole message with `privacy: .public`.
+- A1 from `/speckit.analyze` is closed by T129 (constitution Principle VI, FR-031): `spec.md` defines when an `S` word is laser power versus spindle speed, and T044/T047 assert both rejection of laser tokens and acceptance of valid spindle `S` words.
